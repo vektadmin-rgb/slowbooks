@@ -1092,6 +1092,103 @@ async function handlePhoto(e) {
     });
     $('photo-btns')?.appendChild(btn);
   }
+  // Auto-scan receipt
+  await scanReceiptOCR(S.photoData);
+}
+
+async function scanReceiptOCR(dataUrl) {
+  const apiKey = await DB.getSetting('anthropicKey', '');
+  if (!apiKey) return; // silently skip if no key set
+
+  // Show scanning indicator
+  const box = $('photo-box');
+  if (box) {
+    const overlay = document.createElement('div');
+    overlay.id = 'scan-overlay';
+    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:11px;color:#fff;flex-direction:column;gap:4px;z-index:10';
+    overlay.innerHTML = '<span style="font-size:20px">🔍</span><span>Scanning…</span>';
+    box.style.position = 'relative';
+    box.appendChild(overlay);
+  }
+
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const mediaType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 512,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64 },
+            },
+            {
+              type: 'text',
+              text: `Extract receipt data from this image. Respond ONLY with a valid JSON object, no markdown, no explanation. Use this exact structure:
+{"merchant":"","date":"","amount":0,"taxAmount":0,"category":"","paymentMethod":"","notes":""}
+
+Rules:
+- date: YYYY-MM-DD format, today if not visible
+- amount: total amount as number (no $ sign)
+- taxAmount: tax/HST/GST as number, 0 if not visible
+- category: one of [Ink & Supplies, Equipment, Studio Rent, Marketing, Travel, Misc]
+- paymentMethod: one of [Cash, Debit Card, Credit Card, Venmo, Zelle, Apple Pay, Check, Other]
+- notes: any useful info like receipt number or items purchased (max 80 chars)
+- If a field is not visible, use empty string or 0`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    } catch {
+      throw new Error('Could not parse response');
+    }
+
+    // Fill in fields
+    if (parsed.merchant && $('f-merchant')) $('f-merchant').value = parsed.merchant;
+    if (parsed.date     && $('f-date'))     $('f-date').value     = parsed.date;
+    if (parsed.amount   && $('f-amount'))   $('f-amount').value   = parsed.amount;
+    if (parsed.taxAmount && $('f-tax'))     $('f-tax').value      = parsed.taxAmount;
+    if (parsed.notes    && $('f-notes'))    $('f-notes').value    = parsed.notes;
+
+    // Category
+    if (parsed.category && $('f-cat')) {
+      const catEl = $('f-cat');
+      const match = [...catEl.options].find(o => o.value === parsed.category);
+      if (match) catEl.value = parsed.category;
+    }
+
+    // Payment method
+    if (parsed.paymentMethod && $('f-pm')) {
+      const pmEl = $('f-pm');
+      const match = [...pmEl.options].find(o => o.value === parsed.paymentMethod);
+      if (match) pmEl.value = parsed.paymentMethod;
+    }
+
+    toast('Receipt scanned ✓', 'ok');
+  } catch (err) {
+    toast('Scan failed — fill in manually', 'warn');
+  } finally {
+    document.getElementById('scan-overlay')?.remove();
+  }
 }
 
 async function saveReceipt() {
@@ -1534,16 +1631,31 @@ function drawPieChart(canvasId, data) {
 
 // ─── VIEW: SETTINGS ──────────────────────────
 async function renderSettings() {
-  const cid        = await DB.getSetting('gdClientId', '');
-  const lastSync   = await DB.getSetting('lastSync', null);
-  const connected  = !!Drive.token();
-  const gpsEnabled = await DB.getSetting('gpsEnabled', true);
-  const craRate    = await DB.getSetting('craRate', CRA_DEFAULT);
-  const redirectUri = location.origin + location.pathname;
+  const cid          = await DB.getSetting('gdClientId', '');
+  const lastSync     = await DB.getSetting('lastSync', null);
+  const connected    = !!Drive.token();
+  const gpsEnabled   = await DB.getSetting('gpsEnabled', true);
+  const craRate      = await DB.getSetting('craRate', CRA_DEFAULT);
+  const anthropicKey = await DB.getSetting('anthropicKey', '');
+  const redirectUri  = location.origin + location.pathname;
 
   $('root').innerHTML = `
     <div class="settings-wrap">
       <div class="form-title">Settings</div>
+
+      <div class="s-card">
+        <h3>📸 Receipt AI Scanning</h3>
+        <p class="muted sm">Automatically extract merchant, amount, date and more from receipt photos using Claude AI.</p>
+        <div class="fg mt8">
+          <label for="s-akey">Anthropic API Key</label>
+          <input id="s-akey" type="password" placeholder="sk-ant-…" value="${esc(anthropicKey)}" autocomplete="off">
+        </div>
+        <div class="s-row">
+          <button class="btn-primary" id="btn-save-akey">Save Key</button>
+          ${anthropicKey ? `<span class="muted sm" style="color:var(--green)">&#9679; Key saved</span>` : `<span class="muted sm">No key — scanning disabled</span>`}
+        </div>
+        <p class="muted sm" style="margin-top:8px">Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. Stored locally only, never sent anywhere except Anthropic.</p>
+      </div>
 
       <div class="s-card">
         <h3>GPS Tracking</h3>
@@ -1608,6 +1720,14 @@ async function renderSettings() {
       </div>
     </div>
   `;
+
+  $('btn-save-akey').addEventListener('click', async () => {
+    const val = $('s-akey')?.value?.trim();
+    if (!val) { toast('Enter an API key', 'warn'); return; }
+    await DB.setSetting('anthropicKey', val);
+    toast('API key saved — scanning enabled ✓', 'ok');
+    renderSettings();
+  });
 
   $('gps-toggle-s').addEventListener('change', async e => {
     await DB.setSetting('gpsEnabled', e.target.checked);
