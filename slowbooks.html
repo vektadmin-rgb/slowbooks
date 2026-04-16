@@ -341,7 +341,7 @@ details>summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
-
+ 
 <div id="app">
   <header id="hdr">
     <span id="logo">SLOWBOOKS</span>
@@ -352,7 +352,7 @@ details>summary::-webkit-details-marker{display:none}
   </header>
   <div id="root"></div>
 </div>
-
+ 
 <nav id="bottom-nav">
   <button class="nav-btn active" data-tab="receipts">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -385,9 +385,9 @@ details>summary::-webkit-details-marker{display:none}
     <span>Settings</span>
   </button>
 </nav>
-
+ 
 <div id="toast" role="status" aria-live="polite"></div>
-
+ 
 <script>
 'use strict';
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -395,7 +395,7 @@ details>summary::-webkit-details-marker{display:none}
    Receipt tracker + mileage log
    Storage: IndexedDB   Sync: Google Drive OAuth2
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
+ 
 // ─── CONSTANTS ──────────────────────────────
 const VER         = '2.1';
 const CATS        = ['Ink & Supplies','Equipment','Studio Rent','Marketing','Travel','Misc'];
@@ -404,7 +404,7 @@ const CRA_DEFAULT = 0.70;
 const DRIVE_FILE  = 'slowbooks_data.json';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const PIE_COLORS  = ['#c8102e','#e67e22','#f0a500','#2ecc71','#1abc9c','#3498db','#9b59b6','#e91e63'];
-
+ 
 // ─── PWA MANIFEST ────────────────────────────
 (function () {
   const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#111"/><text x="256" y="370" text-anchor="middle" font-size="340" font-family="Georgia,serif" fill="#c8102e">S</text></svg>`;
@@ -417,7 +417,7 @@ const PIE_COLORS  = ['#c8102e','#e67e22','#f0a500','#2ecc71','#1abc9c','#3498db'
   };
   document.getElementById('pwa-manifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
 }());
-
+ 
 // ─── SERVICE WORKER ──────────────────────────
 const SW_SRC = `
 const CACHE = 'sb-v${VER}';
@@ -457,7 +457,7 @@ if ('serviceWorker' in navigator) {
     );
   }).catch(() => {});
 }
-
+ 
 // ─── INDEXED DB ─────────────────────────────
 const DB = (() => {
   let _db;
@@ -507,7 +507,7 @@ const DB = (() => {
     setSetting(key, value) { return this.put('settings', { key, value }); },
   };
 })();
-
+ 
 // ─── PREDICTIVE TEXT ────────────────────────
 const Predict = {
   _merchants: [], _purposes: [], _notes: [],
@@ -529,7 +529,7 @@ const Predict = {
     return match ? match.slice(typed.length) : '';
   },
 };
-
+ 
 // ─── GHOST TEXT HELPER ───────────────────────
 function attachGhost(inputId, ghostId, field) {
   const inp = $(inputId);
@@ -547,7 +547,7 @@ function attachGhost(inputId, ghostId, field) {
     }
   });
 }
-
+ 
 // ─── HAVERSINE ───────────────────────────────
 function haversineKm(a, b) {
   const R = 6371;
@@ -557,7 +557,7 @@ function haversineKm(a, b) {
     Math.cos(a.lat * Math.PI/180) * Math.cos(b.lat * Math.PI/180) * Math.sin(dLon/2)**2;
   return R * 2 * Math.asin(Math.sqrt(x));
 }
-
+ 
 // ─── GOOGLE DRIVE ────────────────────────────
 const Drive = {
   token() {
@@ -626,7 +626,7 @@ const Drive = {
   async sync(onStatus) {
     const tok = this.token();
     if (!tok) { await this.authorize(); return; }
-
+ 
     S.syncStatus = 'syncing'; renderDot();
     onStatus && onStatus('Connecting to Google Drive…');
     try {
@@ -636,30 +636,30 @@ const Drive = {
       for (const t of S.trips) {
         if (!t.uid) { t.uid = mkuid(); await DB.put('trips', t); }
       }
-
+ 
       onStatus && onStatus('Fetching remote data…');
       const file   = await this.findFile(tok);
       const remote = file ? await this.download(tok, file.id) : { receipts: [], trips: [] };
       const remoteReceipts = remote.receipts || [];
       const remoteTrips    = remote.trips    || [];
-
+ 
       const rMap = new Map();
       remoteReceipts.forEach(r => rMap.set(r.uid, r));
       S.receipts.forEach(r => rMap.set(r.uid, r));
       const mergedReceipts = [...rMap.values()].sort((a, b) => b.date.localeCompare(a.date));
-
+ 
       const tMap = new Map();
       remoteTrips.forEach(t => tMap.set(t.uid, t));
       S.trips.forEach(t => tMap.set(t.uid, t));
       const mergedTrips = [...tMap.values()].sort((a, b) => b.date.localeCompare(a.date));
-
+ 
       onStatus && onStatus('Uploading merged data…');
       await this.upload(tok, {
         ver: VER, at: new Date().toISOString(),
         receipts: mergedReceipts,
         trips: mergedTrips,
       }, file?.id);
-
+ 
       const localRUids = new Set(S.receipts.map(r => r.uid));
       for (const r of mergedReceipts) {
         if (!localRUids.has(r.uid)) {
@@ -675,7 +675,7 @@ const Drive = {
         }
       }
       await DB.setSetting('lastSync', new Date().toISOString());
-
+ 
       S.receipts = await DB.all('receipts');
       S.trips    = await DB.all('trips');
       await Predict.build();
@@ -691,7 +691,7 @@ const Drive = {
     }
   },
 };
-
+ 
 // ─── IMAGE ───────────────────────────────────
 const Img = {
   compress(file, maxPx = 800, q = 0.78) {
@@ -716,7 +716,7 @@ const Img = {
     });
   },
 };
-
+ 
 // ─── CSV EXPORT ──────────────────────────────
 function exportCSV(rows) {
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
@@ -734,7 +734,7 @@ function exportCSV(rows) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast('Exported ' + rows.length + ' receipt' + (rows.length !== 1 ? 's' : ''), 'ok');
 }
-
+ 
 function exportTripsCSV(trips) {
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
   const hdr = ['Date','Start','End','KM','Purpose','Write-Off ($)','GPS Used','Created At'];
@@ -752,7 +752,7 @@ function exportTripsCSV(trips) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast('Exported ' + trips.length + ' trip' + (trips.length !== 1 ? 's' : ''), 'ok');
 }
-
+ 
 // ─── STATE ───────────────────────────────────
 const S = {
   tab: 'receipts',
@@ -765,7 +765,7 @@ const S = {
   activeTrip: null,
   ovFilter: { from: '', to: '' },
 };
-
+ 
 // ─── UTILITIES ───────────────────────────────
 const $  = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -795,7 +795,7 @@ function renderDot() {
   d.className = 'dot' + (S.syncStatus ? ' ' + S.syncStatus : '');
   d.title = { syncing: 'Syncing…', ok: 'Synced', err: 'Sync error' }[S.syncStatus] || '';
 }
-
+ 
 // ─── SYNC MODAL ──────────────────────────────
 function showSyncModal() {
   const modal = document.createElement('div');
@@ -811,7 +811,7 @@ function showSyncModal() {
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   $('sync-modal-close').addEventListener('click', closeModal);
   function closeModal() { modal.remove(); }
-
+ 
   Drive.sync(msg => {
     const el = $('sync-modal-status');
     if (el) el.textContent = msg;
@@ -822,7 +822,7 @@ function showSyncModal() {
     else if (S.tab === 'overview') renderOverview();
   }).catch(() => {});
 }
-
+ 
 // ─── TAB ROUTER ──────────────────────────────
 function renderTab(tab) {
   S.tab = tab;
@@ -834,21 +834,21 @@ function renderTab(tab) {
   else if (tab === 'overview') renderOverview();
   else if (tab === 'settings') renderSettings();
 }
-
+ 
 // ─── VIEW: LIST ──────────────────────────────
 function renderList() {
   let rows = S.receipts.slice().sort((a, b) => b.date.localeCompare(a.date));
   if (S.filter.cat)   rows = rows.filter(r => r.category === S.filter.cat);
   if (S.filter.month) rows = rows.filter(r => r.date && r.date.startsWith(S.filter.month));
-
+ 
   const total    = rows.reduce((s, r) => s + (+r.amount    || 0), 0);
   const taxTotal = rows.reduce((s, r) => s + (+r.taxAmount || 0), 0);
-
+ 
   const catOpts = `<option value="">All Categories</option>`
     + [...CATS, 'Custom'].map(c =>
         `<option value="${c}"${S.filter.cat === c ? ' selected' : ''}>${c}</option>`
       ).join('');
-
+ 
   $('root').innerHTML = `
     <div class="toolbar">
       <select id="fl-cat">${catOpts}</select>
@@ -867,12 +867,12 @@ function renderList() {
     </div>
     <button class="fab" id="btn-new">+</button>
   `;
-
+ 
   $('fl-cat').addEventListener('change',   e => { S.filter.cat   = e.target.value; renderList(); });
   $('fl-month').addEventListener('change', e => { S.filter.month = e.target.value; renderList(); });
   $('btn-csv').addEventListener('click',   () => exportCSV(rows));
   $('btn-new').addEventListener('click',   () => openForm(null));
-
+ 
   $('card-list').addEventListener('click', e => {
     const eb = e.target.closest('[data-edit]');
     const db = e.target.closest('[data-del]');
@@ -880,7 +880,7 @@ function renderList() {
     if (db) confirmDelete(+db.dataset.del);
   });
 }
-
+ 
 function cardHTML(r) {
   const thumb = r.photo
     ? `<img class="thumb" src="${r.photo}" loading="lazy" alt="receipt photo">`
@@ -909,7 +909,7 @@ function cardHTML(r) {
       </div>
     </div>`;
 }
-
+ 
 // ─── VIEW: FORM ──────────────────────────────
 function openForm(id) {
   S.editId = id;
@@ -917,24 +917,24 @@ function openForm(id) {
   S.photoData = r?.photo || null;
   renderForm(r);
 }
-
+ 
 function renderForm(r) {
   const today    = new Date().toISOString().slice(0, 10);
   const v        = (k, fb = '') => esc(r?.[k] ?? fb);
   const isCustom = r && !CATS.includes(r.category) && r.category;
-
+ 
   const catOpts = CATS.map(c =>
     `<option value="${c}"${r?.category === c && !isCustom ? ' selected' : ''}>${c}</option>`
   ).join('') + `<option value="__custom__"${isCustom ? ' selected' : ''}>+ Custom…</option>`;
-
+ 
   const pmOpts = PMTS.map(p =>
     `<option value="${p}"${r?.paymentMethod === p ? ' selected' : ''}>${p}</option>`
   ).join('');
-
+ 
   $('root').innerHTML = `
     <div class="form-wrap">
       <div class="form-title">${r ? 'Edit Receipt' : 'New Receipt'}</div>
-
+ 
       <div class="photo-row">
         <div class="photo-box" id="photo-box">
           ${S.photoData
@@ -953,7 +953,7 @@ function renderForm(r) {
           ${S.photoData ? `<button class="btn-ghost sm" id="btn-rmphoto">&#10005; Remove</button>` : ''}
         </div>
       </div>
-
+ 
       <div class="row2">
         <div class="fg">
           <label for="f-amount">Amount ($) *</label>
@@ -964,12 +964,12 @@ function renderForm(r) {
           <input id="f-tax" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${v('taxAmount')}">
         </div>
       </div>
-
+ 
       <div class="fg">
         <label for="f-date">Date *</label>
         <input id="f-date" type="date" value="${v('date', today)}">
       </div>
-
+ 
       <div class="fg">
         <label for="f-cat">Category</label>
         <select id="f-cat">${catOpts}</select>
@@ -977,7 +977,7 @@ function renderForm(r) {
           value="${isCustom ? v('category') : ''}"
           style="margin-top:6px${isCustom ? '' : ';display:none'}">
       </div>
-
+ 
       <div class="fg">
         <label for="f-merchant">Merchant</label>
         <div class="ghost-wrap">
@@ -985,12 +985,12 @@ function renderForm(r) {
           <span class="ghost-hint" id="ghost-merchant"></span>
         </div>
       </div>
-
+ 
       <div class="fg">
         <label for="f-pm">Payment Method</label>
         <select id="f-pm">${pmOpts}</select>
       </div>
-
+ 
       <div class="fg">
         <label for="f-notes">Notes</label>
         <div class="ghost-wrap">
@@ -998,7 +998,7 @@ function renderForm(r) {
           <span class="ghost-hint" id="ghost-notes" style="top:14px;transform:none"></span>
         </div>
       </div>
-
+ 
       <div class="fg" id="batch-section">
         <label>Batch Upload (up to 5 receipts)</label>
         <label class="btn-sm" for="inp-batch" style="align-self:flex-start">
@@ -1008,30 +1008,30 @@ function renderForm(r) {
         <div id="batch-preview" class="batch-preview"></div>
         <button class="btn-secondary" id="btn-batch-save" style="display:none;margin-top:8px">Save All as Receipts</button>
       </div>
-
+ 
       <div class="form-btns">
         <button class="btn-primary" id="btn-save">${r ? 'Update Receipt' : 'Save Receipt'}</button>
         <button class="btn-secondary" id="btn-cancel">Cancel</button>
       </div>
     </div>
   `;
-
+ 
   $('inp-cam').addEventListener('change',  handlePhoto);
   $('inp-file').addEventListener('change', handlePhoto);
   $('btn-rmphoto')?.addEventListener('click', () => { S.photoData = null; renderForm(r); });
-
+ 
   $('f-cat').addEventListener('change', function () {
     const ci = $('f-cat-custom');
     if (this.value === '__custom__') { ci.style.display = ''; ci.focus(); }
     else { ci.style.display = 'none'; ci.value = ''; }
   });
-
+ 
   $('btn-save').addEventListener('click',   saveReceipt);
   $('btn-cancel').addEventListener('click', () => renderTab('receipts'));
-
+ 
   attachGhost('f-merchant', 'ghost-merchant', 'merchant');
   attachGhost('f-notes',    'ghost-notes',    'notes');
-
+ 
   // Batch upload
   let _batchFiles = [];
   $('inp-batch').addEventListener('change', async e => {
@@ -1050,7 +1050,7 @@ function renderForm(r) {
     }
     $('btn-batch-save').style.display = _batchFiles.length ? '' : 'none';
   });
-
+ 
   $('btn-batch-save').addEventListener('click', async () => {
     const today2 = new Date().toISOString().slice(0, 10);
     const thumbs = $('batch-preview').querySelectorAll('img');
@@ -1073,7 +1073,7 @@ function renderForm(r) {
     renderTab('receipts');
   });
 }
-
+ 
 async function handlePhoto(e) {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -1095,11 +1095,11 @@ async function handlePhoto(e) {
   // Auto-scan receipt
   await scanReceiptOCR(S.photoData);
 }
-
+ 
 async function scanReceiptOCR(dataUrl) {
   const apiKey = await DB.getSetting('anthropicKey', '');
   if (!apiKey) return; // silently skip if no key set
-
+ 
   // Show scanning indicator
   const box = $('photo-box');
   if (box) {
@@ -1110,11 +1110,11 @@ async function scanReceiptOCR(dataUrl) {
     box.style.position = 'relative';
     box.appendChild(overlay);
   }
-
+ 
   try {
     const base64 = dataUrl.split(',')[1];
     const mediaType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-
+ 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -1137,7 +1137,7 @@ async function scanReceiptOCR(dataUrl) {
               type: 'text',
               text: `Extract receipt data from this image. Respond ONLY with a valid JSON object, no markdown, no explanation. Use this exact structure:
 {"merchant":"","date":"","amount":0,"taxAmount":0,"category":"","paymentMethod":"","notes":""}
-
+ 
 Rules:
 - date: YYYY-MM-DD format, today if not visible
 - amount: total amount as number (no $ sign)
@@ -1151,38 +1151,38 @@ Rules:
         }]
       })
     });
-
+ 
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
-
+ 
     let parsed;
     try {
       parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
     } catch {
       throw new Error('Could not parse response');
     }
-
+ 
     // Fill in fields
     if (parsed.merchant && $('f-merchant')) $('f-merchant').value = parsed.merchant;
     if (parsed.date     && $('f-date'))     $('f-date').value     = parsed.date;
     if (parsed.amount   && $('f-amount'))   $('f-amount').value   = parsed.amount;
     if (parsed.taxAmount && $('f-tax'))     $('f-tax').value      = parsed.taxAmount;
     if (parsed.notes    && $('f-notes'))    $('f-notes').value    = parsed.notes;
-
+ 
     // Category
     if (parsed.category && $('f-cat')) {
       const catEl = $('f-cat');
       const match = [...catEl.options].find(o => o.value === parsed.category);
       if (match) catEl.value = parsed.category;
     }
-
+ 
     // Payment method
     if (parsed.paymentMethod && $('f-pm')) {
       const pmEl = $('f-pm');
       const match = [...pmEl.options].find(o => o.value === parsed.paymentMethod);
       if (match) pmEl.value = parsed.paymentMethod;
     }
-
+ 
     toast('Receipt scanned ✓', 'ok');
   } catch (err) {
     toast('Scan failed — fill in manually', 'warn');
@@ -1190,7 +1190,7 @@ Rules:
     document.getElementById('scan-overlay')?.remove();
   }
 }
-
+ 
 async function saveReceipt() {
   const date     = $('f-date')?.value?.trim()    || '';
   const amount   = parseFloat($('f-amount')?.value) || 0;
@@ -1202,9 +1202,9 @@ async function saveReceipt() {
   const category = catRaw === '__custom__'
     ? ($('f-cat-custom')?.value?.trim() || 'Misc')
     : (catRaw || 'Misc');
-
+ 
   if (!date) { toast('Date is required', 'warn'); return; }
-
+ 
   const existing = S.editId != null ? S.receipts.find(x => x.id === S.editId) || null : null;
   const record = {
     ...(existing || {}),
@@ -1216,27 +1216,27 @@ async function saveReceipt() {
     updatedAt:    new Date().toISOString(),
   };
   if (S.editId != null) record.id = S.editId;
-
+ 
   await DB.put('receipts', record);
   S.receipts = await DB.all('receipts');
   await Predict.build();
   toast(existing ? 'Receipt updated' : 'Receipt saved', 'ok');
   renderTab('receipts');
 }
-
+ 
 async function confirmDelete(id) {
   if (!confirm('Delete this receipt?')) return;
   await DB.del('receipts', id);
   S.receipts = await DB.all('receipts');
   renderList();
 }
-
+ 
 // ─── VIEW: TRAVEL ────────────────────────────
 async function renderTravel() {
   const gpsEnabled = await DB.getSetting('gpsEnabled', true);
   const craRate    = await DB.getSetting('craRate', CRA_DEFAULT);
   const trips      = S.trips.slice().sort((a, b) => b.date.localeCompare(a.date));
-
+ 
   let activeTripCard = '';
   if (S.activeTrip) {
     activeTripCard = `
@@ -1250,7 +1250,7 @@ async function renderTravel() {
       </div>
     `;
   }
-
+ 
   $('root').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:14px;color:var(--tx2)">CRA rate: <strong>$${(+craRate).toFixed(2)}/km</strong></div>
@@ -1259,24 +1259,24 @@ async function renderTravel() {
         <input type="checkbox" id="gps-toggle" ${gpsEnabled ? 'checked' : ''} style="width:auto;height:auto">
       </label>
     </div>
-
+ 
     ${activeTripCard}
-
+ 
     <div id="trip-list">
       ${trips.length ? trips.map(t => tripCardHTML(t, craRate)).join('') : '<div class="empty">No trips yet.<br>Tap&nbsp;+ to log a trip.</div>'}
     </div>
-
+ 
     ${!S.activeTrip ? `<button class="fab" id="btn-new-trip">+</button>` : ''}
   `;
-
+ 
   $('gps-toggle').addEventListener('change', async e => {
     await DB.setSetting('gpsEnabled', e.target.checked);
     renderTravel();
   });
-
+ 
   $('btn-end-trip')?.addEventListener('click', endTrip);
   $('btn-new-trip')?.addEventListener('click', () => openTripForm(null));
-
+ 
   $('trip-list').addEventListener('click', e => {
     const eb = e.target.closest('[data-trip-edit]');
     const db = e.target.closest('[data-trip-del]');
@@ -1284,7 +1284,7 @@ async function renderTravel() {
     if (db) confirmDeleteTrip(+db.dataset.tripDel);
   });
 }
-
+ 
 function tripCardHTML(t, craRate) {
   const writeOff = (+t.km || 0) * (+craRate || CRA_DEFAULT);
   return `
@@ -1304,7 +1304,7 @@ function tripCardHTML(t, craRate) {
       </div>
     </div>`;
 }
-
+ 
 async function startTrip() {
   const gpsEnabled = await DB.getSetting('gpsEnabled', true);
   S.activeTrip = {
@@ -1322,13 +1322,13 @@ async function startTrip() {
   await DB.setSetting('activeTrip', S.activeTrip);
   renderTravel();
 }
-
+ 
 async function endTrip() {
   if (!S.activeTrip) return;
   if (S.activeTrip.watchId != null) {
     navigator.geolocation.clearWatch(S.activeTrip.watchId);
   }
-
+ 
   const getEndCoords = () => new Promise(resolve => {
     if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
@@ -1337,7 +1337,7 @@ async function endTrip() {
       { enableHighAccuracy: true, timeout: 8000 }
     );
   });
-
+ 
   const endCoords = await getEndCoords();
   let km = 0;
   let gpsUsed = false;
@@ -1345,7 +1345,7 @@ async function endTrip() {
     km = haversineKm(S.activeTrip.startCoords, endCoords);
     gpsUsed = true;
   }
-
+ 
   const tripData = {
     startCoords: S.activeTrip.startCoords,
     endCoords,
@@ -1353,19 +1353,19 @@ async function endTrip() {
     gpsUsed,
     startTime: S.activeTrip.startTime,
   };
-
+ 
   S.activeTrip = null;
   await DB.setSetting('activeTrip', null);
-
+ 
   openTripForm(null, tripData);
 }
-
+ 
 async function openTripForm(id, prefill = null) {
   const t = id != null ? (S.trips.find(x => x.id === id) || null) : null;
   const craRate = await DB.getSetting('craRate', CRA_DEFAULT);
   renderTripForm(t, prefill, craRate);
 }
-
+ 
 function renderTripForm(t, prefill, craRate) {
   const today = new Date().toISOString().slice(0, 10);
   const v = (k, fb = '') => esc(t?.[k] ?? prefill?.[k] ?? fb);
@@ -1375,29 +1375,29 @@ function renderTripForm(t, prefill, craRate) {
     ? JSON.stringify(t?.startCoords || prefill?.startCoords) : '';
   const endCoordsStr = (t?.endCoords || prefill?.endCoords)
     ? JSON.stringify(t?.endCoords || prefill?.endCoords) : '';
-
+ 
   const gpsUsed = t?.gpsUsed || prefill?.gpsUsed || false;
   const showMapsBtn = !gpsUsed;
-
+ 
   $('root').innerHTML = `
     <div class="form-wrap">
       <div class="form-title">${t ? 'Edit Trip' : 'New Trip'}</div>
-
+ 
       <div class="fg">
         <label for="t-date">Date *</label>
         <input id="t-date" type="date" value="${v('date', today)}">
       </div>
-
+ 
       <div class="fg">
         <label for="t-start">Start Point</label>
         <input id="t-start" type="text" placeholder="Address or location" value="${v('startPoint')}">
       </div>
-
+ 
       <div class="fg">
         <label for="t-end">End Point</label>
         <input id="t-end" type="text" placeholder="Address or location" value="${v('endPoint')}">
       </div>
-
+ 
       <div class="fg">
         <label for="t-km">Distance (km)</label>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1406,7 +1406,7 @@ function renderTripForm(t, prefill, craRate) {
         </div>
         ${gpsUsed ? `<span style="font-size:12px;color:var(--green)">📡 GPS calculated</span>` : ''}
       </div>
-
+ 
       <div class="fg">
         <label for="t-purpose">Purpose</label>
         <div class="ghost-wrap">
@@ -1414,35 +1414,35 @@ function renderTripForm(t, prefill, craRate) {
           <span class="ghost-hint" id="ghost-purpose"></span>
         </div>
       </div>
-
+ 
       <div class="fg">
         <label>CRA Write-Off</label>
         <div class="writeoff-display" id="writeoff-display">$${writeOff} (${km > 0 ? (+km).toFixed(1) : '0'} km × $${(+craRate).toFixed(2)})</div>
       </div>
-
+ 
       <div class="fg">
         <label for="t-notes">Notes (optional)</label>
         <textarea id="t-notes" rows="2" placeholder="Optional…">${v('notes')}</textarea>
       </div>
-
+ 
       <input type="hidden" id="t-start-coords" value="${esc(startCoordsStr)}">
       <input type="hidden" id="t-end-coords" value="${esc(endCoordsStr)}">
       <input type="hidden" id="t-gps-used" value="${gpsUsed ? '1' : '0'}">
-
+ 
       <div class="form-btns">
         <button class="btn-primary" id="btn-save-trip">${t ? 'Update Trip' : 'Save Trip'}</button>
         <button class="btn-secondary" id="btn-cancel-trip">Cancel</button>
       </div>
     </div>
   `;
-
+ 
   // Live write-off update
   $('t-km').addEventListener('input', () => {
     const k = parseFloat($('t-km').value) || 0;
     const wo = (k * (+craRate || CRA_DEFAULT)).toFixed(2);
     $('writeoff-display').textContent = `$${wo} (${k.toFixed(1)} km × $${(+craRate).toFixed(2)})`;
   });
-
+ 
   // Maps button
   $('btn-maps')?.addEventListener('click', () => {
     const s = $('t-start').value.trim() || '';
@@ -1450,13 +1450,13 @@ function renderTripForm(t, prefill, craRate) {
     const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(s)}&destination=${encodeURIComponent(e)}`;
     window.open(url, '_blank');
   });
-
+ 
   attachGhost('t-purpose', 'ghost-purpose', 'purpose');
-
+ 
   $('btn-save-trip').addEventListener('click', () => saveTripForm(t, craRate));
   $('btn-cancel-trip').addEventListener('click', () => renderTab('travel'));
 }
-
+ 
 async function saveTripForm(existing, craRate) {
   const date       = $('t-date')?.value?.trim()    || '';
   const startPoint = $('t-start')?.value?.trim()   || '';
@@ -1465,15 +1465,15 @@ async function saveTripForm(existing, craRate) {
   const purpose    = $('t-purpose')?.value?.trim() || '';
   const notes      = $('t-notes')?.value?.trim()   || '';
   const gpsUsed    = $('t-gps-used')?.value === '1';
-
+ 
   let startCoords = null, endCoords = null;
   try { startCoords = JSON.parse($('t-start-coords')?.value || 'null'); } catch {}
   try { endCoords   = JSON.parse($('t-end-coords')?.value   || 'null'); } catch {}
-
+ 
   if (!date) { toast('Date is required', 'warn'); return; }
-
+ 
   const writeOff = km * (+craRate || CRA_DEFAULT);
-
+ 
   const record = {
     ...(existing || {}),
     uid:         existing?.uid || mkuid(),
@@ -1483,29 +1483,29 @@ async function saveTripForm(existing, craRate) {
     updatedAt:   new Date().toISOString(),
   };
   if (existing?.id != null) record.id = existing.id;
-
+ 
   await DB.put('trips', record);
   S.trips = await DB.all('trips');
   await Predict.build();
   toast(existing ? 'Trip updated' : 'Trip saved', 'ok');
   renderTab('travel');
 }
-
+ 
 async function confirmDeleteTrip(id) {
   if (!confirm('Delete this trip?')) return;
   await DB.del('trips', id);
   S.trips = await DB.all('trips');
   renderTravel();
 }
-
+ 
 // ─── VIEW: OVERVIEW ──────────────────────────
 async function renderOverview() {
   const odo     = await DB.getSetting('odometer');
   const craRate = await DB.getSetting('craRate', CRA_DEFAULT);
-
+ 
   let receipts = S.receipts.slice();
   let trips    = S.trips.slice();
-
+ 
   // Date range filter
   const { from, to } = S.ovFilter;
   if (from) {
@@ -1517,12 +1517,12 @@ async function renderOverview() {
     receipts = receipts.filter(r => r.date <= toEnd);
     trips    = trips.filter(t => t.date <= toEnd);
   }
-
+ 
   const totalKm      = trips.reduce((s, t) => s + (+t.km || 0), 0);
   const totalWriteOff = trips.reduce((s, t) => s + ((+t.km || 0) * (+craRate || CRA_DEFAULT)), 0);
   const totalSpent   = receipts.reduce((s, r) => s + (+r.amount || 0), 0);
   const totalTax     = receipts.reduce((s, r) => s + (+r.taxAmount || 0), 0);
-
+ 
   // Category breakdown
   const catMap = {};
   for (const r of receipts) {
@@ -1532,43 +1532,43 @@ async function renderOverview() {
   const catData = Object.entries(catMap)
     .map(([label, value], i) => ({ label, value, color: PIE_COLORS[i % PIE_COLORS.length] }))
     .sort((a, b) => b.value - a.value);
-
+ 
   const odoDisplay = odo != null
     ? `<span style="font-size:16px;font-weight:700;color:var(--tx)">${(+odo).toLocaleString()} km</span>`
     : `<span style="color:var(--tx2)">Not set</span>`;
-
+ 
   $('root').innerHTML = `
     <div class="toolbar" style="margin-bottom:14px">
       <input type="month" id="ov-from" placeholder="From" value="${esc(S.ovFilter.from)}" style="flex:1;min-width:100px">
       <input type="month" id="ov-to" placeholder="To" value="${esc(S.ovFilter.to)}" style="flex:1;min-width:100px">
       <button class="btn-sm" id="ov-reset">All time</button>
     </div>
-
+ 
     <div class="ov-odo" id="odo-display">
       Odometer: ${odoDisplay} <span style="color:var(--tx2);font-size:13px">✏</span>
     </div>
-
+ 
     <div class="ov-card">
       <h3>Mileage Summary</h3>
       <div class="ov-row"><span class="muted">Total trips</span><span class="ov-val">${trips.length}</span></div>
       <div class="ov-row"><span class="muted">Total km</span><span class="ov-val">${totalKm.toFixed(1)} km</span></div>
       <div class="ov-row"><span class="muted">CRA write-off</span><span class="ov-val" style="color:var(--green)">$${totalWriteOff.toFixed(2)}</span></div>
     </div>
-
+ 
     <div class="ov-card">
       <h3>Expense Summary</h3>
       <div class="ov-row"><span class="muted">Total receipts</span><span class="ov-val">${receipts.length}</span></div>
       <div class="ov-row"><span class="muted">Total spent</span><span class="ov-val">$${totalSpent.toFixed(2)}</span></div>
       <div class="ov-row"><span class="muted">Total tax</span><span class="ov-val">$${totalTax.toFixed(2)}</span></div>
     </div>
-
+ 
     ${catData.length > 0 ? `
     <div class="ov-card">
       <h3>By Category</h3>
       <canvas id="pie-chart" width="200" height="200" style="display:block;margin:0 auto"></canvas>
       <div class="pie-legend" id="pie-legend"></div>
     </div>` : ''}
-
+ 
     <div class="ov-card">
       <h3>Export</h3>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1577,11 +1577,11 @@ async function renderOverview() {
       </div>
     </div>
   `;
-
+ 
   $('ov-from').addEventListener('change', e => { S.ovFilter.from = e.target.value; renderOverview(); });
   $('ov-to').addEventListener('change',   e => { S.ovFilter.to   = e.target.value; renderOverview(); });
   $('ov-reset').addEventListener('click', () => { S.ovFilter = { from: '', to: '' }; renderOverview(); });
-
+ 
   $('odo-display').addEventListener('click', async () => {
     if (!confirm('Edit odometer reading?')) return;
     const val = prompt('Enter current odometer reading (km):', odo != null ? odo : '');
@@ -1591,10 +1591,10 @@ async function renderOverview() {
       renderOverview();
     }
   });
-
+ 
   $('btn-export-receipts').addEventListener('click', () => exportCSV(receipts));
   $('btn-export-trips').addEventListener('click',    () => exportTripsCSV(trips));
-
+ 
   // Pie chart
   if (catData.length > 0) {
     drawPieChart('pie-chart', catData);
@@ -1609,7 +1609,7 @@ async function renderOverview() {
       </div>`).join('');
   }
 }
-
+ 
 function drawPieChart(canvasId, data) {
   const canvas = $(canvasId);
   if (!canvas) return;
@@ -1628,7 +1628,7 @@ function drawPieChart(canvasId, data) {
     angle += slice;
   });
 }
-
+ 
 // ─── VIEW: SETTINGS ──────────────────────────
 async function renderSettings() {
   const cid          = await DB.getSetting('gdClientId', '');
@@ -1638,11 +1638,11 @@ async function renderSettings() {
   const craRate      = await DB.getSetting('craRate', CRA_DEFAULT);
   const anthropicKey = await DB.getSetting('anthropicKey', '');
   const redirectUri  = location.origin + location.pathname;
-
+ 
   $('root').innerHTML = `
     <div class="settings-wrap">
       <div class="form-title">Settings</div>
-
+ 
       <div class="s-card">
         <h3>📸 Receipt AI Scanning</h3>
         <p class="muted sm">Automatically extract merchant, amount, date and more from receipt photos using Claude AI.</p>
@@ -1656,7 +1656,7 @@ async function renderSettings() {
         </div>
         <p class="muted sm" style="margin-top:8px">Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. Stored locally only, never sent anywhere except Anthropic.</p>
       </div>
-
+ 
       <div class="s-card">
         <h3>GPS Tracking</h3>
         <p class="muted sm">Used for automatic trip distance calculation.</p>
@@ -1667,7 +1667,7 @@ async function renderSettings() {
           </label>
         </div>
       </div>
-
+ 
       <div class="s-card">
         <h3>CRA Mileage Rate</h3>
         <p class="muted sm">Current rate: <strong id="cra-rate-display">$${(+craRate).toFixed(2)} / km</strong></p>
@@ -1677,11 +1677,11 @@ async function renderSettings() {
         </div>
         <p class="muted sm" style="margin-top:8px">Update manually when CRA publishes new rates.</p>
       </div>
-
+ 
       <div class="s-card">
         <h3>Google Drive Sync</h3>
         <p class="muted sm">Sync receipts and trips across devices using your own Google Cloud credentials.</p>
-
+ 
         <details class="setup-details mt8">
           <summary>&#9654; Setup instructions</summary>
           <ol>
@@ -1695,7 +1695,7 @@ async function renderSettings() {
             <li>Paste your Client ID below and tap Save</li>
           </ol>
         </details>
-
+ 
         <div class="fg mt8">
           <label for="s-cid">OAuth 2.0 Client ID</label>
           <input id="s-cid" type="text" placeholder="xxxxxxxx.apps.googleusercontent.com" value="${esc(cid)}">
@@ -1709,7 +1709,7 @@ async function renderSettings() {
         </div>
         ${lastSync ? `<p class="muted sm mt8">Last synced: ${new Date(lastSync).toLocaleString()}</p>` : ''}
       </div>
-
+ 
       <div class="s-card">
         <h3>Data</h3>
         <p class="muted sm">${S.receipts.length} receipt${S.receipts.length !== 1 ? 's' : ''} · ${S.trips.length} trip${S.trips.length !== 1 ? 's' : ''} stored locally</p>
@@ -1720,7 +1720,7 @@ async function renderSettings() {
       </div>
     </div>
   `;
-
+ 
   $('btn-save-akey').addEventListener('click', async () => {
     const val = $('s-akey')?.value?.trim();
     if (!val) { toast('Enter an API key', 'warn'); return; }
@@ -1728,12 +1728,12 @@ async function renderSettings() {
     toast('API key saved — scanning enabled ✓', 'ok');
     renderSettings();
   });
-
+ 
   $('gps-toggle-s').addEventListener('change', async e => {
     await DB.setSetting('gpsEnabled', e.target.checked);
     toast('GPS ' + (e.target.checked ? 'enabled' : 'disabled'), 'ok');
   });
-
+ 
   $('btn-save-cra').addEventListener('click', async () => {
     const val = parseFloat($('s-cra-rate')?.value);
     if (isNaN(val) || val <= 0) { toast('Enter a valid rate', 'warn'); return; }
@@ -1741,7 +1741,7 @@ async function renderSettings() {
     $('cra-rate-display').textContent = `$${val.toFixed(2)} / km`;
     toast('CRA rate updated', 'ok');
   });
-
+ 
   $('btn-copy-uri').addEventListener('click', () => {
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(redirectUri).then(() => toast('Copied!', 'ok'));
@@ -1749,22 +1749,22 @@ async function renderSettings() {
       prompt('Copy this URL:', redirectUri);
     }
   });
-
+ 
   $('btn-save-cid').addEventListener('click', async () => {
     const val = $('s-cid')?.value?.trim();
     if (!val) { toast('Enter a Client ID', 'warn'); return; }
     await DB.setSetting('gdClientId', val);
     toast('Client ID saved', 'ok');
   });
-
+ 
   $('btn-disconnect')?.addEventListener('click', () => {
     Drive.clearToken();
     toast('Disconnected from Google Drive', 'ok');
     renderSettings();
   });
-
+ 
   $('btn-export-all').addEventListener('click', () => exportCSV(S.receipts));
-
+ 
   $('btn-clear-all').addEventListener('click', async () => {
     if (!confirm('Permanently delete ALL receipts and trips?')) return;
     if (!confirm('This cannot be undone. Delete everything?')) return;
@@ -1777,29 +1777,29 @@ async function renderSettings() {
     renderTab('receipts');
   });
 }
-
+ 
 // ─── HEADER WIRING ───────────────────────────
 $('btn-sync').addEventListener('click', showSyncModal);
-
+ 
 // Bottom nav wiring
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => renderTab(btn.dataset.tab));
 });
-
+ 
 // ─── INIT ────────────────────────────────────
 async function init() {
   if (Drive.checkCallback()) {
     S.syncStatus = 'ok'; renderDot();
     toast('Google Drive connected', 'ok');
   }
-
+ 
   await DB.open();
-
+ 
   S.receipts = await DB.all('receipts');
   S.trips    = await DB.all('trips');
-
+ 
   await Predict.build();
-
+ 
   // Odometer first-launch / yearly prompt
   const odo = await DB.getSetting('odometer');
   if (odo == null) {
@@ -1818,7 +1818,7 @@ async function init() {
       }
     }
   }
-
+ 
   // Drive client ID nudge
   const cid = await DB.getSetting('gdClientId');
   if (!cid) {
@@ -1828,16 +1828,16 @@ async function init() {
       setTimeout(() => toast('Tip: Add your Google Client ID in Settings for cloud backup', 'ok'), 1500);
     }
   }
-
+ 
   const lastSync = await DB.getSetting('lastSync');
   if (lastSync) { S.syncStatus = 'ok'; renderDot(); }
-
+ 
   // Restore active trip state
   S.activeTrip = await DB.getSetting('activeTrip', null);
-
+ 
   renderTab('receipts');
 }
-
+ 
 init();
 </script>
 </body>
