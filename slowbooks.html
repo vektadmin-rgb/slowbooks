@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Slowbooks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#c8102e">
+<link id="pwa-manifest" rel="manifest">
+<title>Slowbooks</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111;--sf:#1c1c1c;--sf2:#252525;
+  --ac:#c8102e;--ach:#a50c25;
+  --tx:#efefef;--tx2:#888;--bd:#2e2e2e;
+  --green:#2ecc71;--yellow:#f0a500;--red:#e74c3c;
+  --r:8px
+}
+html{-webkit-text-size-adjust:100%;color-scheme:dark}
+body{
+  background:var(--bg);color:var(--tx);
+  font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  max-width:600px;margin:0 auto;
+  min-height:100dvh;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 68px);
+  overscroll-behavior-y:none
+}
+/* ── header ─────────────────────────── */
+#hdr{
+  position:sticky;top:0;z-index:50;
+  background:var(--sf);border-bottom:1px solid var(--bd);
+  padding:11px 16px;
+  padding-top:calc(11px + env(safe-area-inset-top,0px));
+  display:flex;justify-content:space-between;align-items:center
+}
+#logo{font:bold 15px/1 Georgia,serif;letter-spacing:3px;color:var(--ac)}
+#hdr-r{display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;vertical-align:middle;background:var(--bd);transition:background .3s}
+.dot.ok{background:var(--green)}
+.dot.err{background:var(--red)}
+.dot.syncing{background:var(--yellow);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.hdr-btn{
+  background:transparent;border:none;color:var(--tx2);
+  font-size:18px;padding:6px 10px;cursor:pointer;
+  border-radius:var(--r);touch-action:manipulation;line-height:1
+}
+.hdr-btn:active{background:var(--sf2)}
+/* ── bottom nav ─────────────────────── */
+#bottom-nav{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  max-width:600px;margin:0 auto;
+  background:var(--sf);
+  border-top:1px solid var(--bd);
+  display:flex;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  z-index:50
+}
+.nav-btn{
+  flex:1;background:transparent;border:none;
+  color:var(--tx2);font-size:10px;
+  padding:10px 4px 8px;
+  display:flex;flex-direction:column;
+  align-items:center;gap:3px;
+  cursor:pointer;touch-action:manipulation;
+  transition:color .15s
+}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn.active{color:var(--ac)}
+.nav-btn:active{opacity:.7}
+/* ── main ───────────────────────────── */
+#root{padding:12px 16px}
+/* ── toolbar ────────────────────────── */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.toolbar select,.toolbar input[type=month]{
+  flex:1;min-width:110px;
+  background:var(--sf);color:var(--tx);
+  border:1px solid var(--bd);border-radius:var(--r);
+  padding:8px 10px;font:14px/1 system-ui,sans-serif;
+  -webkit-appearance:none;appearance:none
+}
+/* ── summary bar ────────────────────── */
+.summary{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;color:var(--tx2);margin-bottom:10px
+}
+.sum-total{color:var(--ac);font-weight:700}
+.sum-tax{color:var(--tx2);font-weight:400;font-size:12px}
+/* ── cards ──────────────────────────── */
+#card-list{display:flex;flex-direction:column;gap:10px}
+.card{
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:var(--r);display:flex;gap:10px;padding:10px
+}
+.thumb{width:64px;height:64px;border-radius:6px;object-fit:cover;flex-shrink:0}
+.thumb-empty{
+  width:64px;height:64px;background:var(--sf2);
+  border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-size:22px;flex-shrink:0;color:var(--tx2)
+}
+.card-body{flex:1;min-width:0}
+.card-r1{
+  display:flex;justify-content:space-between;
+  align-items:baseline;gap:6px;margin-bottom:4px
+}
+.card-merchant{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-amt{color:var(--ac);font-weight:700;white-space:nowrap;font-size:16px}
+.card-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:4px}
+.tag{
+  font-size:11px;background:var(--sf2);
+  border-radius:4px;padding:2px 7px;color:var(--tx2)
+}
+.card-date{font-size:12px;color:var(--tx2)}
+.card-notes{
+  font-size:12px;color:var(--tx2);margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.card-acts{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.icon-btn{
+  background:transparent;border:none;
+  padding:5px 8px;cursor:pointer;border-radius:4px;font-size:15px;line-height:1
+}
+.icon-btn:active{background:var(--sf2)}
+.icon-btn.del:active{background:rgba(231,76,60,.2)}
+.empty{
+  text-align:center;color:var(--tx2);
+  padding:64px 24px;font-size:14px;line-height:2
+}
+/* ── FAB ────────────────────────────── */
+.fab{
+  position:fixed;
+  bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  right:20px;width:56px;height:56px;border-radius:50%;
+  background:var(--ac);color:#fff;font-size:28px;border:none;
+  cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  z-index:40;touch-action:manipulation;line-height:1
+}
+.fab:active{transform:scale(.93)}
+/* ── form ───────────────────────────── */
+.form-wrap{padding-bottom:32px}
+.form-title{font-size:18px;font-weight:700;margin-bottom:16px;letter-spacing:.3px}
+.photo-row{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.photo-box{
+  width:96px;height:96px;flex-shrink:0;
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:var(--r);display:flex;align-items:center;
+  justify-content:center;overflow:hidden
+}
+.photo-ph{text-align:center;font-size:26px;color:var(--tx2);line-height:1.6}
+.photo-ph small{font-size:11px;display:block}
+.photo-full{width:100%;height:100%;object-fit:cover}
+.photo-btns{display:flex;flex-direction:column;gap:7px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fg>label{font-size:13px;color:var(--tx2);font-weight:500}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  background:var(--sf);color:var(--tx);
+  border:1px solid var(--bd);border-radius:var(--r);
+  padding:10px 12px;font:15px/1.4 system-ui,sans-serif;
+  width:100%;-webkit-appearance:none;appearance:none
+}
+input[type=month]{
+  background:var(--sf);color:var(--tx);
+  border:1px solid var(--bd);border-radius:var(--r);
+  padding:8px 10px;font:14px/1 system-ui,sans-serif;
+  -webkit-appearance:none;appearance:none
+}
+input:focus,select:focus,textarea:focus{
+  outline:2px solid var(--ac);border-color:transparent
+}
+textarea{resize:vertical;min-height:72px}
+select{cursor:pointer}
+.form-btns{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+/* ── settings ───────────────────────── */
+.settings-wrap{padding-bottom:32px}
+.s-card{
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:var(--r);padding:16px;margin-bottom:14px
+}
+.s-card h3{font-size:15px;margin-bottom:8px}
+.s-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.setup-details{margin:10px 0}
+.setup-details summary{font-size:13px;color:var(--tx2);cursor:pointer;user-select:none}
+.setup-details ol{
+  margin:10px 0 0 20px;
+  font-size:13px;color:var(--tx2);line-height:1.9
+}
+.setup-details a{color:var(--ac)}
+.code-block{
+  display:block;background:var(--sf2);border-radius:4px;
+  padding:6px 10px;margin:4px 0;
+  font:12px/1.5 monospace;word-break:break-all;color:var(--tx)
+}
+/* ── buttons ────────────────────────── */
+.btn-primary{
+  background:var(--ac);color:#fff;border:none;
+  border-radius:var(--r);padding:12px 22px;
+  font:600 15px system-ui,sans-serif;
+  cursor:pointer;touch-action:manipulation
+}
+.btn-primary:active{background:var(--ach)}
+.btn-secondary{
+  background:var(--sf2);color:var(--tx);
+  border:1px solid var(--bd);border-radius:var(--r);
+  padding:10px 16px;font:14px system-ui,sans-serif;cursor:pointer
+}
+.btn-secondary:active{background:var(--bd)}
+.btn-ghost{
+  background:transparent;color:var(--tx2);
+  border:1px solid var(--bd);border-radius:var(--r);
+  padding:8px 14px;font:13px system-ui,sans-serif;cursor:pointer
+}
+.btn-ghost:active{background:var(--sf)}
+.btn-ghost.sm{padding:6px 10px;font-size:12px}
+.btn-danger{
+  background:transparent;color:var(--red);
+  border:1px solid rgba(231,76,60,.5);border-radius:var(--r);
+  padding:9px 14px;font:14px system-ui,sans-serif;cursor:pointer
+}
+.btn-danger:active{background:rgba(231,76,60,.1)}
+.btn-sm{
+  background:var(--sf2);color:var(--tx);
+  border:1px solid var(--bd);border-radius:var(--r);
+  padding:8px 12px;font:13px system-ui,sans-serif;
+  cursor:pointer;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;
+  touch-action:manipulation
+}
+.btn-sm:active{background:var(--bd)}
+.btn-xs{
+  background:var(--sf2);color:var(--tx2);
+  border:1px solid var(--bd);border-radius:4px;
+  padding:3px 8px;font:12px system-ui,sans-serif;cursor:pointer
+}
+/* ── toast ──────────────────────────── */
+#toast{
+  position:fixed;
+  bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  left:50%;transform:translateX(-50%) translateY(6px);
+  background:var(--sf2);color:var(--tx);
+  border:1px solid var(--bd);border-radius:20px;
+  padding:10px 20px;font-size:14px;white-space:nowrap;
+  opacity:0;transition:opacity .18s,transform .18s;
+  pointer-events:none;z-index:200
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:var(--green);color:var(--green)}
+#toast.warn{border-color:var(--yellow);color:var(--yellow)}
+#toast.err{border-color:var(--red);color:var(--red)}
+/* ── sync modal ─────────────────────── */
+#sync-modal{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center
+}
+#sync-modal-box{
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:var(--r);padding:28px 24px;
+  width:min(320px,90vw);text-align:center;
+  display:flex;flex-direction:column;gap:14px
+}
+#sync-modal-title{font-size:17px;font-weight:700}
+#sync-modal-status{color:var(--tx2);font-size:14px;min-height:40px}
+/* ── ghost text ─────────────────────── */
+.ghost-wrap{position:relative}
+.ghost-input{background:transparent;position:relative;z-index:1}
+.ghost-hint{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:var(--tx2);opacity:.45;pointer-events:none;
+  font:15px/1.4 system-ui,sans-serif;white-space:nowrap;
+  overflow:hidden;z-index:0
+}
+/* ── overview ───────────────────────── */
+.ov-card{
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:var(--r);padding:16px;margin-bottom:14px
+}
+.ov-card h3{font-size:14px;color:var(--tx2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.ov-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font-size:14px}
+.ov-val{font-weight:700;color:var(--tx)}
+.ov-odo{
+  font-size:14px;color:var(--tx2);margin-bottom:14px;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px
+}
+.ov-odo span{color:var(--tx)}
+.pie-legend{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.pie-legend-row{display:flex;align-items:center;gap:8px;font-size:13px}
+.pie-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pie-label{flex:1;color:var(--tx2)}
+.pie-amt{font-weight:600}
+.pie-pct{color:var(--tx2);font-size:12px}
+/* ── travel ─────────────────────────── */
+.active-trip-card{
+  background:var(--sf);border:2px solid var(--red);
+  border-radius:var(--r);padding:16px;margin-bottom:14px;
+  display:flex;align-items:center;gap:12px
+}
+.pulse-dot{
+  width:10px;height:10px;border-radius:50%;background:var(--red);
+  animation:pulse 1s infinite;flex-shrink:0
+}
+.active-trip-info{flex:1}
+.active-trip-info strong{display:block;font-size:15px}
+.active-trip-info span{font-size:13px;color:var(--tx2)}
+.trip-card{
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:var(--r);padding:12px;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:flex-start
+}
+.trip-body{flex:1;min-width:0}
+.trip-r1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.trip-km{font-weight:700;color:var(--ac);font-size:16px}
+.trip-purpose{font-size:14px;font-weight:600;margin-bottom:2px}
+.trip-writeoff{font-size:13px;color:var(--green)}
+.trip-route{font-size:12px;color:var(--tx2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip-date{font-size:12px;color:var(--tx2)}
+/* ── toggle ─────────────────────────── */
+.toggle-label{display:flex;align-items:center;justify-content:space-between;width:100%;cursor:pointer;font-size:14px}
+.toggle-label input[type=checkbox]{width:40px;height:24px;-webkit-appearance:none;appearance:none;background:var(--bd);border-radius:12px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle-label input[type=checkbox]::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left .2s}
+.toggle-label input[type=checkbox]:checked{background:var(--ac)}
+.toggle-label input[type=checkbox]:checked::after{left:19px}
+/* ── misc ───────────────────────────── */
+a{color:var(--ac)}
+details>summary{list-style:none}
+details>summary::-webkit-details-marker{display:none}
+.sm{font-size:13px}
+.muted{color:var(--tx2)}
+.mt8{margin-top:8px}
+.batch-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.batch-thumb{width:60px;height:60px;border-radius:6px;object-fit:cover;border:1px solid var(--bd)}
+.writeoff-display{
+  background:var(--sf2);border-radius:var(--r);padding:10px 12px;
+  font-size:14px;color:var(--green);border:1px solid var(--bd)
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header id="hdr">
+    <span id="logo">SLOWBOOKS</span>
+    <div id="hdr-r">
+      <span id="sync-dot" class="dot" title=""></span>
+      <button class="hdr-btn" id="btn-sync" title="Sync to Drive">&#9729;</button>
+    </div>
+  </header>
+  <div id="root"></div>
+</div>
+
+<nav id="bottom-nav">
+  <button class="nav-btn active" data-tab="receipts">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="1"/>
+      <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+    </svg>
+    <span>Receipts</span>
+  </button>
+  <button class="nav-btn" data-tab="travel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5"/>
+      <circle cx="15.5" cy="17.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/>
+      <path d="M3 9h11m-3-6v6"/>
+    </svg>
+    <span>Travel</span>
+  </button>
+  <button class="nav-btn" data-tab="overview">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+    </svg>
+    <span>Overview</span>
+  </button>
+  <button class="nav-btn" data-tab="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SLOWBOOKS  v2.1 — offline-first PWA
+   Receipt tracker + mileage log
+   Storage: IndexedDB   Sync: Google Drive OAuth2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+// ─── CONSTANTS ──────────────────────────────
+const VER         = '2.1';
+const CATS        = ['Ink & Supplies','Equipment','Studio Rent','Marketing','Travel','Misc'];
+const PMTS        = ['Cash','Debit Card','Credit Card','Venmo','Zelle','Apple Pay','Check','Other'];
+const CRA_DEFAULT = 0.70;
+const DRIVE_FILE  = 'slowbooks_data.json';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const PIE_COLORS  = ['#c8102e','#e67e22','#f0a500','#2ecc71','#1abc9c','#3498db','#9b59b6','#e91e63'];
+
+// ─── PWA MANIFEST ────────────────────────────
+(function () {
+  const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#111"/><text x="256" y="370" text-anchor="middle" font-size="340" font-family="Georgia,serif" fill="#c8102e">S</text></svg>`;
+  const manifest = {
+    name: 'Slowbooks', short_name: 'Slowbooks',
+    description: 'Offline receipt tracker',
+    start_url: location.pathname, display: 'standalone',
+    orientation: 'portrait', background_color: '#111', theme_color: '#c8102e',
+    icons: [{ src: 'data:image/svg+xml,' + encodeURIComponent(icon), sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }],
+  };
+  document.getElementById('pwa-manifest').href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+}());
+
+// ─── SERVICE WORKER ──────────────────────────
+const SW_SRC = `
+const CACHE = 'sb-v${VER}';
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'CACHE_URL')
+    caches.open(CACHE).then(c => c.add(e.data.url).catch(() => {}));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(hit => {
+      if (hit) return hit;
+      return fetch(e.request).then(res => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request));
+    })
+  );
+});
+`;
+if ('serviceWorker' in navigator) {
+  const swBlob = new Blob([SW_SRC], { type: 'text/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).then(reg => {
+    navigator.serviceWorker.ready.then(r =>
+      r.active && r.active.postMessage({ type: 'CACHE_URL', url: location.href })
+    );
+  }).catch(() => {});
+}
+
+// ─── INDEXED DB ─────────────────────────────
+const DB = (() => {
+  let _db;
+  const wrap = req => new Promise((ok, fail) => {
+    req.onsuccess = e => ok(e.target.result);
+    req.onerror   = e => fail(e.target.error);
+  });
+  return {
+    open() {
+      return new Promise((ok, fail) => {
+        const req = indexedDB.open('slowbooks', 2);
+        req.onupgradeneeded = e => {
+          const db = e.target.result;
+          if (e.oldVersion < 1) {
+            const s = db.createObjectStore('receipts', { keyPath: 'id', autoIncrement: true });
+            s.createIndex('date', 'date');
+            s.createIndex('category', 'category');
+            db.createObjectStore('settings', { keyPath: 'key' });
+          }
+          if (e.oldVersion < 2) {
+            if (!db.objectStoreNames.contains('receipts')) {
+              const s2 = db.createObjectStore('receipts', { keyPath: 'id', autoIncrement: true });
+              s2.createIndex('date', 'date');
+              s2.createIndex('category', 'category');
+            }
+            if (!db.objectStoreNames.contains('settings'))
+              db.createObjectStore('settings', { keyPath: 'key' });
+            if (!db.objectStoreNames.contains('trips')) {
+              const t = db.createObjectStore('trips', { keyPath: 'id', autoIncrement: true });
+              t.createIndex('date', 'date');
+            }
+          }
+        };
+        req.onsuccess = e => { _db = e.target.result; ok(); };
+        req.onerror   = e => fail(e.target.error);
+      });
+    },
+    _s(name, mode = 'readonly') { return _db.transaction(name, mode).objectStore(name); },
+    all(name)       { return wrap(this._s(name).getAll()); },
+    get(name, key)  { return wrap(this._s(name).get(key)); },
+    put(name, obj)  { return wrap(this._s(name, 'readwrite').put(obj)); },
+    del(name, key)  { return wrap(this._s(name, 'readwrite').delete(key)); },
+    async getSetting(key, fb = null) {
+      const r = await this.get('settings', key);
+      return r != null ? r.value : fb;
+    },
+    setSetting(key, value) { return this.put('settings', { key, value }); },
+  };
+})();
+
+// ─── PREDICTIVE TEXT ────────────────────────
+const Predict = {
+  _merchants: [], _purposes: [], _notes: [],
+  async build() {
+    const merchants = S.receipts.map(r => r.merchant).filter(Boolean);
+    const purposes  = S.trips.map(t => t.purpose).filter(Boolean);
+    const notes     = S.receipts.map(r => r.notes).filter(Boolean);
+    this._merchants = [...new Set(merchants)];
+    this._purposes  = [...new Set(purposes)];
+    this._notes     = [...new Set(notes)];
+  },
+  suggest(field, typed) {
+    if (!typed || typed.length < 2) return '';
+    const corpus = field === 'merchant' ? this._merchants
+                 : field === 'purpose'  ? this._purposes
+                 : field === 'notes'    ? this._notes : [];
+    const lower = typed.toLowerCase();
+    const match = corpus.find(v => v.toLowerCase().startsWith(lower) && v.toLowerCase() !== lower);
+    return match ? match.slice(typed.length) : '';
+  },
+};
+
+// ─── GHOST TEXT HELPER ───────────────────────
+function attachGhost(inputId, ghostId, field) {
+  const inp = $(inputId);
+  const ghost = $(ghostId);
+  if (!inp || !ghost) return;
+  inp.addEventListener('input', () => {
+    const hint = Predict.suggest(field, inp.value);
+    ghost.textContent = hint ? inp.value + hint : '';
+  });
+  inp.addEventListener('keydown', e => {
+    if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghost.textContent) {
+      e.preventDefault();
+      inp.value = ghost.textContent;
+      ghost.textContent = '';
+    }
+  });
+}
+
+// ─── HAVERSINE ───────────────────────────────
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLon = (b.lng - a.lng) * Math.PI / 180;
+  const x = Math.sin(dLat/2)**2 +
+    Math.cos(a.lat * Math.PI/180) * Math.cos(b.lat * Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(x));
+}
+
+// ─── GOOGLE DRIVE ────────────────────────────
+const Drive = {
+  token() {
+    const t = localStorage.getItem('gd_tok');
+    const e = +(localStorage.getItem('gd_exp') || 0);
+    return (t && Date.now() < e) ? t : null;
+  },
+  saveToken(tok, secs) {
+    localStorage.setItem('gd_tok', tok);
+    localStorage.setItem('gd_exp', Date.now() + (parseInt(secs) - 120) * 1000);
+  },
+  clearToken() {
+    localStorage.removeItem('gd_tok');
+    localStorage.removeItem('gd_exp');
+  },
+  checkCallback() {
+    const p = new URLSearchParams(location.hash.slice(1));
+    const t = p.get('access_token');
+    if (!t) return false;
+    this.saveToken(t, p.get('expires_in') || '3600');
+    history.replaceState(null, '', location.pathname);
+    return true;
+  },
+  async authorize() {
+    const cid = await DB.getSetting('gdClientId');
+    if (!cid) { toast('Add your Google Client ID in Settings first', 'warn'); return; }
+    location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+      client_id: cid,
+      redirect_uri: location.origin + location.pathname,
+      response_type: 'token',
+      scope: DRIVE_SCOPE,
+    });
+  },
+  async _fetch(method, path, body, tok) {
+    const hdrs = { Authorization: 'Bearer ' + tok };
+    let reqBody;
+    if (body && !(body instanceof FormData)) { hdrs['Content-Type'] = 'application/json'; reqBody = JSON.stringify(body); }
+    else if (body) reqBody = body;
+    const r = await fetch('https://www.googleapis.com' + path, { method, headers: hdrs, body: reqBody });
+    if (!r.ok) throw new Error('Drive ' + r.status + ': ' + (await r.text()));
+    return r.headers.get('content-type')?.includes('json') ? r.json() : r.text();
+  },
+  async findFile(tok) {
+    const d = await this._fetch('GET',
+      '/drive/v3/files?q=' + encodeURIComponent(`name='${DRIVE_FILE}' and trashed=false`) + '&fields=files(id,modifiedTime)',
+      null, tok);
+    return d.files?.[0] || null;
+  },
+  async download(tok, fid) {
+    const r = await fetch('https://www.googleapis.com/drive/v3/files/' + fid + '?alt=media',
+      { headers: { Authorization: 'Bearer ' + tok } });
+    if (!r.ok) throw new Error('Download ' + r.status);
+    return r.json();
+  },
+  async upload(tok, data, fid) {
+    const fd = new FormData();
+    fd.append('metadata', new Blob([JSON.stringify({ name: DRIVE_FILE, mimeType: 'application/json' })], { type: 'application/json' }));
+    fd.append('file',     new Blob([JSON.stringify(data)], { type: 'application/json' }));
+    const url = (fid
+      ? 'https://www.googleapis.com/upload/drive/v3/files/' + fid + '?uploadType=multipart'
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
+    const r = await fetch(url, { method: fid ? 'PATCH' : 'POST', headers: { Authorization: 'Bearer ' + tok }, body: fd });
+    if (!r.ok) throw new Error('Upload ' + r.status);
+    return r.json();
+  },
+  async sync(onStatus) {
+    const tok = this.token();
+    if (!tok) { await this.authorize(); return; }
+
+    S.syncStatus = 'syncing'; renderDot();
+    onStatus && onStatus('Connecting to Google Drive…');
+    try {
+      for (const r of S.receipts) {
+        if (!r.uid) { r.uid = mkuid(); await DB.put('receipts', r); }
+      }
+      for (const t of S.trips) {
+        if (!t.uid) { t.uid = mkuid(); await DB.put('trips', t); }
+      }
+
+      onStatus && onStatus('Fetching remote data…');
+      const file   = await this.findFile(tok);
+      const remote = file ? await this.download(tok, file.id) : { receipts: [], trips: [] };
+      const remoteReceipts = remote.receipts || [];
+      const remoteTrips    = remote.trips    || [];
+
+      const rMap = new Map();
+      remoteReceipts.forEach(r => rMap.set(r.uid, r));
+      S.receipts.forEach(r => rMap.set(r.uid, r));
+      const mergedReceipts = [...rMap.values()].sort((a, b) => b.date.localeCompare(a.date));
+
+      const tMap = new Map();
+      remoteTrips.forEach(t => tMap.set(t.uid, t));
+      S.trips.forEach(t => tMap.set(t.uid, t));
+      const mergedTrips = [...tMap.values()].sort((a, b) => b.date.localeCompare(a.date));
+
+      onStatus && onStatus('Uploading merged data…');
+      await this.upload(tok, {
+        ver: VER, at: new Date().toISOString(),
+        receipts: mergedReceipts,
+        trips: mergedTrips,
+      }, file?.id);
+
+      const localRUids = new Set(S.receipts.map(r => r.uid));
+      for (const r of mergedReceipts) {
+        if (!localRUids.has(r.uid)) {
+          const { id: _d, ...rest } = r;
+          await DB.put('receipts', rest);
+        }
+      }
+      const localTUids = new Set(S.trips.map(t => t.uid));
+      for (const t of mergedTrips) {
+        if (!localTUids.has(t.uid)) {
+          const { id: _d, ...rest } = t;
+          await DB.put('trips', rest);
+        }
+      }
+      await DB.setSetting('lastSync', new Date().toISOString());
+
+      S.receipts = await DB.all('receipts');
+      S.trips    = await DB.all('trips');
+      await Predict.build();
+      S.syncStatus = 'ok'; renderDot();
+      const msg = `Synced — ${mergedReceipts.length} receipt${mergedReceipts.length !== 1 ? 's' : ''}, ${mergedTrips.length} trip${mergedTrips.length !== 1 ? 's' : ''}`;
+      onStatus && onStatus(msg);
+      return msg;
+    } catch (err) {
+      S.syncStatus = 'err'; renderDot();
+      const msg = 'Sync failed: ' + err.message;
+      onStatus && onStatus(msg);
+      throw err;
+    }
+  },
+};
+
+// ─── IMAGE ───────────────────────────────────
+const Img = {
+  compress(file, maxPx = 800, q = 0.78) {
+    return new Promise(ok => {
+      const fr = new FileReader();
+      fr.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          let { width: w, height: h } = img;
+          if (w > maxPx || h > maxPx) {
+            if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+            else       { w = Math.round(w * maxPx / h); h = maxPx; }
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          ok(c.toDataURL('image/jpeg', q));
+        };
+        img.src = e.target.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  },
+};
+
+// ─── CSV EXPORT ──────────────────────────────
+function exportCSV(rows) {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const hdr = ['Date','Merchant','Amount','Tax Amount','Category','Payment Method','Notes','Has Photo','Created At'];
+  const body = rows.map(r => [
+    r.date, r.merchant, r.amount, r.taxAmount, r.category,
+    r.paymentMethod, r.notes, r.photo ? 'yes' : 'no', r.createdAt,
+  ].map(q).join(','));
+  const csv = [hdr.join(','), ...body].join('\r\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })),
+    download: 'slowbooks_receipts_' + new Date().toISOString().slice(0, 10) + '.csv',
+  });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Exported ' + rows.length + ' receipt' + (rows.length !== 1 ? 's' : ''), 'ok');
+}
+
+function exportTripsCSV(trips) {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const hdr = ['Date','Start','End','KM','Purpose','Write-Off ($)','GPS Used','Created At'];
+  const body = trips.map(t => [
+    t.date, t.startPoint, t.endPoint, t.km, t.purpose,
+    t.writeOff?.toFixed ? t.writeOff.toFixed(2) : t.writeOff,
+    t.gpsUsed ? 'yes' : 'no', t.createdAt,
+  ].map(q).join(','));
+  const csv = [hdr.join(','), ...body].join('\r\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })),
+    download: 'slowbooks_trips_' + new Date().toISOString().slice(0, 10) + '.csv',
+  });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('Exported ' + trips.length + ' trip' + (trips.length !== 1 ? 's' : ''), 'ok');
+}
+
+// ─── STATE ───────────────────────────────────
+const S = {
+  tab: 'receipts',
+  receipts: [],
+  trips: [],
+  editId: null,
+  photoData: null,
+  filter: { cat: '', month: '' },
+  syncStatus: '',
+  activeTrip: null,
+  ovFilter: { from: '', to: '' },
+};
+
+// ─── UTILITIES ───────────────────────────────
+const $  = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const mkuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  return MONTHS[+m - 1] + ' ' + +d + ', ' + y;
+}
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+let _toastTimer;
+function toast(msg, type = 'ok') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.className = '', 3200);
+}
+function renderDot() {
+  const d = $('sync-dot');
+  if (!d) return;
+  d.className = 'dot' + (S.syncStatus ? ' ' + S.syncStatus : '');
+  d.title = { syncing: 'Syncing…', ok: 'Synced', err: 'Sync error' }[S.syncStatus] || '';
+}
+
+// ─── SYNC MODAL ──────────────────────────────
+function showSyncModal() {
+  const modal = document.createElement('div');
+  modal.id = 'sync-modal';
+  modal.innerHTML = `
+    <div id="sync-modal-box">
+      <div id="sync-modal-title">☁ Cloud Sync</div>
+      <div id="sync-modal-status">Connecting…</div>
+      <button class="btn-secondary" id="sync-modal-close">Close</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  $('sync-modal-close').addEventListener('click', closeModal);
+  function closeModal() { modal.remove(); }
+
+  Drive.sync(msg => {
+    const el = $('sync-modal-status');
+    if (el) el.textContent = msg;
+  }).then(() => {
+    setTimeout(closeModal, 4000);
+    if (S.tab === 'receipts') renderList();
+    else if (S.tab === 'travel') renderTravel();
+    else if (S.tab === 'overview') renderOverview();
+  }).catch(() => {});
+}
+
+// ─── TAB ROUTER ──────────────────────────────
+function renderTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.nav-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  if (tab === 'receipts') renderList();
+  else if (tab === 'travel')   renderTravel();
+  else if (tab === 'overview') renderOverview();
+  else if (tab === 'settings') renderSettings();
+}
+
+// ─── VIEW: LIST ──────────────────────────────
+function renderList() {
+  let rows = S.receipts.slice().sort((a, b) => b.date.localeCompare(a.date));
+  if (S.filter.cat)   rows = rows.filter(r => r.category === S.filter.cat);
+  if (S.filter.month) rows = rows.filter(r => r.date && r.date.startsWith(S.filter.month));
+
+  const total    = rows.reduce((s, r) => s + (+r.amount    || 0), 0);
+  const taxTotal = rows.reduce((s, r) => s + (+r.taxAmount || 0), 0);
+
+  const catOpts = `<option value="">All Categories</option>`
+    + [...CATS, 'Custom'].map(c =>
+        `<option value="${c}"${S.filter.cat === c ? ' selected' : ''}>${c}</option>`
+      ).join('');
+
+  $('root').innerHTML = `
+    <div class="toolbar">
+      <select id="fl-cat">${catOpts}</select>
+      <input type="month" id="fl-month" value="${esc(S.filter.month)}">
+      <button class="btn-sm" id="btn-csv">&#8595; CSV</button>
+    </div>
+    <div class="summary">
+      <span>${rows.length} receipt${rows.length !== 1 ? 's' : ''}</span>
+      <span>
+        <span class="sum-total">$${total.toFixed(2)}</span>
+        ${taxTotal > 0 ? `<span class="sum-tax">&nbsp;+$${taxTotal.toFixed(2)} tax</span>` : ''}
+      </span>
+    </div>
+    <div id="card-list">
+      ${rows.length ? rows.map(cardHTML).join('') : '<div class="empty">No receipts yet.<br>Tap&nbsp;+ to add one.</div>'}
+    </div>
+    <button class="fab" id="btn-new">+</button>
+  `;
+
+  $('fl-cat').addEventListener('change',   e => { S.filter.cat   = e.target.value; renderList(); });
+  $('fl-month').addEventListener('change', e => { S.filter.month = e.target.value; renderList(); });
+  $('btn-csv').addEventListener('click',   () => exportCSV(rows));
+  $('btn-new').addEventListener('click',   () => openForm(null));
+
+  $('card-list').addEventListener('click', e => {
+    const eb = e.target.closest('[data-edit]');
+    const db = e.target.closest('[data-del]');
+    if (eb) openForm(+eb.dataset.edit);
+    if (db) confirmDelete(+db.dataset.del);
+  });
+}
+
+function cardHTML(r) {
+  const thumb = r.photo
+    ? `<img class="thumb" src="${r.photo}" loading="lazy" alt="receipt photo">`
+    : `<div class="thumb thumb-empty">&#128247;</div>`;
+  const taxBadge = (+r.taxAmount > 0)
+    ? `<span class="tag">+$${(+r.taxAmount).toFixed(2)} tax</span>` : '';
+  return `
+    <div class="card">
+      ${thumb}
+      <div class="card-body">
+        <div class="card-r1">
+          <span class="card-merchant">${esc(r.merchant || '(no merchant)')}</span>
+          <span class="card-amt">$${(+r.amount || 0).toFixed(2)}</span>
+        </div>
+        <div class="card-tags">
+          ${r.category ? `<span class="tag">${esc(r.category)}</span>` : ''}
+          ${r.paymentMethod ? `<span class="tag">${esc(r.paymentMethod)}</span>` : ''}
+          ${taxBadge}
+        </div>
+        <div class="card-date">${fmtDate(r.date)}</div>
+        ${r.notes ? `<div class="card-notes">${esc(r.notes.slice(0, 90))}${r.notes.length > 90 ? '…' : ''}</div>` : ''}
+      </div>
+      <div class="card-acts">
+        <button class="icon-btn" data-edit="${r.id}" aria-label="Edit">&#9999;&#65039;</button>
+        <button class="icon-btn del" data-del="${r.id}" aria-label="Delete">&#128465;</button>
+      </div>
+    </div>`;
+}
+
+// ─── VIEW: FORM ──────────────────────────────
+function openForm(id) {
+  S.editId = id;
+  const r = (id != null) ? (S.receipts.find(x => x.id === id) || null) : null;
+  S.photoData = r?.photo || null;
+  renderForm(r);
+}
+
+function renderForm(r) {
+  const today    = new Date().toISOString().slice(0, 10);
+  const v        = (k, fb = '') => esc(r?.[k] ?? fb);
+  const isCustom = r && !CATS.includes(r.category) && r.category;
+
+  const catOpts = CATS.map(c =>
+    `<option value="${c}"${r?.category === c && !isCustom ? ' selected' : ''}>${c}</option>`
+  ).join('') + `<option value="__custom__"${isCustom ? ' selected' : ''}>+ Custom…</option>`;
+
+  const pmOpts = PMTS.map(p =>
+    `<option value="${p}"${r?.paymentMethod === p ? ' selected' : ''}>${p}</option>`
+  ).join('');
+
+  $('root').innerHTML = `
+    <div class="form-wrap">
+      <div class="form-title">${r ? 'Edit Receipt' : 'New Receipt'}</div>
+
+      <div class="photo-row">
+        <div class="photo-box" id="photo-box">
+          ${S.photoData
+            ? `<img class="photo-full" src="${S.photoData}" alt="receipt">`
+            : `<div class="photo-ph">&#128247;<small>no photo</small></div>`}
+        </div>
+        <div class="photo-btns" id="photo-btns">
+          <label class="btn-sm" for="inp-cam">
+            &#128247; Camera
+            <input type="file" id="inp-cam" accept="image/*" capture="environment" hidden>
+          </label>
+          <label class="btn-sm" for="inp-file">
+            &#128193; Gallery
+            <input type="file" id="inp-file" accept="image/*" hidden>
+          </label>
+          ${S.photoData ? `<button class="btn-ghost sm" id="btn-rmphoto">&#10005; Remove</button>` : ''}
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="fg">
+          <label for="f-amount">Amount ($) *</label>
+          <input id="f-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${v('amount')}">
+        </div>
+        <div class="fg">
+          <label for="f-tax">Tax Amount ($)</label>
+          <input id="f-tax" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" value="${v('taxAmount')}">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label for="f-date">Date *</label>
+        <input id="f-date" type="date" value="${v('date', today)}">
+      </div>
+
+      <div class="fg">
+        <label for="f-cat">Category</label>
+        <select id="f-cat">${catOpts}</select>
+        <input id="f-cat-custom" type="text" placeholder="Custom category name"
+          value="${isCustom ? v('category') : ''}"
+          style="margin-top:6px${isCustom ? '' : ';display:none'}">
+      </div>
+
+      <div class="fg">
+        <label for="f-merchant">Merchant</label>
+        <div class="ghost-wrap">
+          <input class="ghost-input" id="f-merchant" type="text" placeholder="Store or vendor name" value="${v('merchant')}">
+          <span class="ghost-hint" id="ghost-merchant"></span>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label for="f-pm">Payment Method</label>
+        <select id="f-pm">${pmOpts}</select>
+      </div>
+
+      <div class="fg">
+        <label for="f-notes">Notes</label>
+        <div class="ghost-wrap">
+          <textarea class="ghost-input" id="f-notes" rows="3" placeholder="Optional…">${v('notes')}</textarea>
+          <span class="ghost-hint" id="ghost-notes" style="top:14px;transform:none"></span>
+        </div>
+      </div>
+
+      <div class="fg" id="batch-section">
+        <label>Batch Upload (up to 5 receipts)</label>
+        <label class="btn-sm" for="inp-batch" style="align-self:flex-start">
+          &#128194; Select up to 5 photos
+          <input type="file" id="inp-batch" accept="image/*" multiple hidden>
+        </label>
+        <div id="batch-preview" class="batch-preview"></div>
+        <button class="btn-secondary" id="btn-batch-save" style="display:none;margin-top:8px">Save All as Receipts</button>
+      </div>
+
+      <div class="form-btns">
+        <button class="btn-primary" id="btn-save">${r ? 'Update Receipt' : 'Save Receipt'}</button>
+        <button class="btn-secondary" id="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  $('inp-cam').addEventListener('change',  handlePhoto);
+  $('inp-file').addEventListener('change', handlePhoto);
+  $('btn-rmphoto')?.addEventListener('click', () => { S.photoData = null; renderForm(r); });
+
+  $('f-cat').addEventListener('change', function () {
+    const ci = $('f-cat-custom');
+    if (this.value === '__custom__') { ci.style.display = ''; ci.focus(); }
+    else { ci.style.display = 'none'; ci.value = ''; }
+  });
+
+  $('btn-save').addEventListener('click',   saveReceipt);
+  $('btn-cancel').addEventListener('click', () => renderTab('receipts'));
+
+  attachGhost('f-merchant', 'ghost-merchant', 'merchant');
+  attachGhost('f-notes',    'ghost-notes',    'notes');
+
+  // Batch upload
+  let _batchFiles = [];
+  $('inp-batch').addEventListener('change', async e => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 5) { toast('Max 5 files — using first 5', 'warn'); }
+    _batchFiles = files.slice(0, 5);
+    const preview = $('batch-preview');
+    preview.innerHTML = '';
+    for (const f of _batchFiles) {
+      const data = await Img.compress(f);
+      const img = document.createElement('img');
+      img.className = 'batch-thumb';
+      img.src = data;
+      img._compressed = data;
+      preview.appendChild(img);
+    }
+    $('btn-batch-save').style.display = _batchFiles.length ? '' : 'none';
+  });
+
+  $('btn-batch-save').addEventListener('click', async () => {
+    const today2 = new Date().toISOString().slice(0, 10);
+    const thumbs = $('batch-preview').querySelectorAll('img');
+    let saved = 0;
+    for (const img of thumbs) {
+      const rec = {
+        uid: mkuid(), date: today2,
+        merchant: '', amount: 0, taxAmount: 0,
+        category: 'Misc', paymentMethod: '', notes: '',
+        photo: img._compressed,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await DB.put('receipts', rec);
+      saved++;
+    }
+    S.receipts = await DB.all('receipts');
+    await Predict.build();
+    toast('Saved ' + saved + ' receipt' + (saved !== 1 ? 's' : '') + ' — tap to edit each', 'ok');
+    renderTab('receipts');
+  });
+}
+
+async function handlePhoto(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  S.photoData = await Img.compress(file);
+  const box = $('photo-box');
+  if (box) box.innerHTML = `<img class="photo-full" src="${S.photoData}" alt="receipt">`;
+  if (!$('btn-rmphoto')) {
+    const btn = document.createElement('button');
+    btn.id = 'btn-rmphoto';
+    btn.className = 'btn-ghost sm';
+    btn.textContent = '✕ Remove';
+    btn.addEventListener('click', () => {
+      S.photoData = null;
+      const cur = S.editId != null ? (S.receipts.find(x => x.id === S.editId) || null) : null;
+      renderForm(cur);
+    });
+    $('photo-btns')?.appendChild(btn);
+  }
+}
+
+async function saveReceipt() {
+  const date     = $('f-date')?.value?.trim()    || '';
+  const amount   = parseFloat($('f-amount')?.value) || 0;
+  const tax      = parseFloat($('f-tax')?.value)    || 0;
+  const merchant = $('f-merchant')?.value?.trim()   || '';
+  const notes    = $('f-notes')?.value?.trim()      || '';
+  const pm       = $('f-pm')?.value                 || '';
+  const catRaw   = $('f-cat')?.value                || '';
+  const category = catRaw === '__custom__'
+    ? ($('f-cat-custom')?.value?.trim() || 'Misc')
+    : (catRaw || 'Misc');
+
+  if (!date) { toast('Date is required', 'warn'); return; }
+
+  const existing = S.editId != null ? S.receipts.find(x => x.id === S.editId) || null : null;
+  const record = {
+    ...(existing || {}),
+    uid:          existing?.uid || mkuid(),
+    date, merchant, amount, taxAmount: tax,
+    category, paymentMethod: pm, notes,
+    photo:        S.photoData,
+    createdAt:    existing?.createdAt || new Date().toISOString(),
+    updatedAt:    new Date().toISOString(),
+  };
+  if (S.editId != null) record.id = S.editId;
+
+  await DB.put('receipts', record);
+  S.receipts = await DB.all('receipts');
+  await Predict.build();
+  toast(existing ? 'Receipt updated' : 'Receipt saved', 'ok');
+  renderTab('receipts');
+}
+
+async function confirmDelete(id) {
+  if (!confirm('Delete this receipt?')) return;
+  await DB.del('receipts', id);
+  S.receipts = await DB.all('receipts');
+  renderList();
+}
+
+// ─── VIEW: TRAVEL ────────────────────────────
+async function renderTravel() {
+  const gpsEnabled = await DB.getSetting('gpsEnabled', true);
+  const craRate    = await DB.getSetting('craRate', CRA_DEFAULT);
+  const trips      = S.trips.slice().sort((a, b) => b.date.localeCompare(a.date));
+
+  let activeTripCard = '';
+  if (S.activeTrip) {
+    activeTripCard = `
+      <div class="active-trip-card">
+        <div class="pulse-dot"></div>
+        <div class="active-trip-info">
+          <strong>🚗 Trip in progress</strong>
+          <span>Started: ${fmtTime(S.activeTrip.startTime)}</span>
+        </div>
+        <button class="btn-primary" id="btn-end-trip" style="font-size:13px;padding:9px 14px">End Trip</button>
+      </div>
+    `;
+  }
+
+  $('root').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:14px;color:var(--tx2)">CRA rate: <strong>$${(+craRate).toFixed(2)}/km</strong></div>
+      <label class="btn-sm" style="gap:6px">
+        <span style="font-size:12px">${gpsEnabled ? '📡 GPS On' : '📡 GPS Off'}</span>
+        <input type="checkbox" id="gps-toggle" ${gpsEnabled ? 'checked' : ''} style="width:auto;height:auto">
+      </label>
+    </div>
+
+    ${activeTripCard}
+
+    <div id="trip-list">
+      ${trips.length ? trips.map(t => tripCardHTML(t, craRate)).join('') : '<div class="empty">No trips yet.<br>Tap&nbsp;+ to log a trip.</div>'}
+    </div>
+
+    ${!S.activeTrip ? `<button class="fab" id="btn-new-trip">+</button>` : ''}
+  `;
+
+  $('gps-toggle').addEventListener('change', async e => {
+    await DB.setSetting('gpsEnabled', e.target.checked);
+    renderTravel();
+  });
+
+  $('btn-end-trip')?.addEventListener('click', endTrip);
+  $('btn-new-trip')?.addEventListener('click', () => openTripForm(null));
+
+  $('trip-list').addEventListener('click', e => {
+    const eb = e.target.closest('[data-trip-edit]');
+    const db = e.target.closest('[data-trip-del]');
+    if (eb) openTripForm(+eb.dataset.tripEdit);
+    if (db) confirmDeleteTrip(+db.dataset.tripDel);
+  });
+}
+
+function tripCardHTML(t, craRate) {
+  const writeOff = (+t.km || 0) * (+craRate || CRA_DEFAULT);
+  return `
+    <div class="trip-card">
+      <div class="trip-body">
+        <div class="trip-r1">
+          <span class="trip-date">${fmtDate(t.date)}</span>
+          <span class="trip-km">${(+t.km || 0).toFixed(1)} km</span>
+        </div>
+        <div class="trip-purpose">${esc(t.purpose || '(no purpose)')}</div>
+        <div class="trip-writeoff">$${writeOff.toFixed(2)} write-off</div>
+        <div class="trip-route">${esc(t.startPoint || '?')} → ${esc(t.endPoint || '?')}</div>
+      </div>
+      <div class="card-acts">
+        <button class="icon-btn" data-trip-edit="${t.id}" aria-label="Edit">&#9999;&#65039;</button>
+        <button class="icon-btn del" data-trip-del="${t.id}" aria-label="Delete">&#128465;</button>
+      </div>
+    </div>`;
+}
+
+async function startTrip() {
+  const gpsEnabled = await DB.getSetting('gpsEnabled', true);
+  S.activeTrip = {
+    startTime: new Date().toISOString(),
+    startCoords: null,
+    watchId: null,
+  };
+  if (gpsEnabled && navigator.geolocation) {
+    S.activeTrip.watchId = navigator.geolocation.watchPosition(
+      pos => { S.activeTrip.startCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+      () => toast('GPS unavailable', 'warn'),
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+  }
+  await DB.setSetting('activeTrip', S.activeTrip);
+  renderTravel();
+}
+
+async function endTrip() {
+  if (!S.activeTrip) return;
+  if (S.activeTrip.watchId != null) {
+    navigator.geolocation.clearWatch(S.activeTrip.watchId);
+  }
+
+  const getEndCoords = () => new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+
+  const endCoords = await getEndCoords();
+  let km = 0;
+  let gpsUsed = false;
+  if (S.activeTrip.startCoords && endCoords) {
+    km = haversineKm(S.activeTrip.startCoords, endCoords);
+    gpsUsed = true;
+  }
+
+  const tripData = {
+    startCoords: S.activeTrip.startCoords,
+    endCoords,
+    km,
+    gpsUsed,
+    startTime: S.activeTrip.startTime,
+  };
+
+  S.activeTrip = null;
+  await DB.setSetting('activeTrip', null);
+
+  openTripForm(null, tripData);
+}
+
+async function openTripForm(id, prefill = null) {
+  const t = id != null ? (S.trips.find(x => x.id === id) || null) : null;
+  const craRate = await DB.getSetting('craRate', CRA_DEFAULT);
+  renderTripForm(t, prefill, craRate);
+}
+
+function renderTripForm(t, prefill, craRate) {
+  const today = new Date().toISOString().slice(0, 10);
+  const v = (k, fb = '') => esc(t?.[k] ?? prefill?.[k] ?? fb);
+  const km = t?.km ?? prefill?.km ?? 0;
+  const writeOff = (+km * (+craRate || CRA_DEFAULT)).toFixed(2);
+  const startCoordsStr = (t?.startCoords || prefill?.startCoords)
+    ? JSON.stringify(t?.startCoords || prefill?.startCoords) : '';
+  const endCoordsStr = (t?.endCoords || prefill?.endCoords)
+    ? JSON.stringify(t?.endCoords || prefill?.endCoords) : '';
+
+  const gpsUsed = t?.gpsUsed || prefill?.gpsUsed || false;
+  const showMapsBtn = !gpsUsed;
+
+  $('root').innerHTML = `
+    <div class="form-wrap">
+      <div class="form-title">${t ? 'Edit Trip' : 'New Trip'}</div>
+
+      <div class="fg">
+        <label for="t-date">Date *</label>
+        <input id="t-date" type="date" value="${v('date', today)}">
+      </div>
+
+      <div class="fg">
+        <label for="t-start">Start Point</label>
+        <input id="t-start" type="text" placeholder="Address or location" value="${v('startPoint')}">
+      </div>
+
+      <div class="fg">
+        <label for="t-end">End Point</label>
+        <input id="t-end" type="text" placeholder="Address or location" value="${v('endPoint')}">
+      </div>
+
+      <div class="fg">
+        <label for="t-km">Distance (km)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="t-km" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0.0" value="${km > 0 ? km.toFixed ? km.toFixed(2) : km : ''}">
+          ${showMapsBtn ? `<button class="btn-sm" id="btn-maps" type="button" style="white-space:nowrap">🗺 Maps</button>` : ''}
+        </div>
+        ${gpsUsed ? `<span style="font-size:12px;color:var(--green)">📡 GPS calculated</span>` : ''}
+      </div>
+
+      <div class="fg">
+        <label for="t-purpose">Purpose</label>
+        <div class="ghost-wrap">
+          <input class="ghost-input" id="t-purpose" type="text" placeholder="e.g. Client supply run" value="${v('purpose')}">
+          <span class="ghost-hint" id="ghost-purpose"></span>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>CRA Write-Off</label>
+        <div class="writeoff-display" id="writeoff-display">$${writeOff} (${km > 0 ? (+km).toFixed(1) : '0'} km × $${(+craRate).toFixed(2)})</div>
+      </div>
+
+      <div class="fg">
+        <label for="t-notes">Notes (optional)</label>
+        <textarea id="t-notes" rows="2" placeholder="Optional…">${v('notes')}</textarea>
+      </div>
+
+      <input type="hidden" id="t-start-coords" value="${esc(startCoordsStr)}">
+      <input type="hidden" id="t-end-coords" value="${esc(endCoordsStr)}">
+      <input type="hidden" id="t-gps-used" value="${gpsUsed ? '1' : '0'}">
+
+      <div class="form-btns">
+        <button class="btn-primary" id="btn-save-trip">${t ? 'Update Trip' : 'Save Trip'}</button>
+        <button class="btn-secondary" id="btn-cancel-trip">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  // Live write-off update
+  $('t-km').addEventListener('input', () => {
+    const k = parseFloat($('t-km').value) || 0;
+    const wo = (k * (+craRate || CRA_DEFAULT)).toFixed(2);
+    $('writeoff-display').textContent = `$${wo} (${k.toFixed(1)} km × $${(+craRate).toFixed(2)})`;
+  });
+
+  // Maps button
+  $('btn-maps')?.addEventListener('click', () => {
+    const s = $('t-start').value.trim() || '';
+    const e = $('t-end').value.trim() || '';
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(s)}&destination=${encodeURIComponent(e)}`;
+    window.open(url, '_blank');
+  });
+
+  attachGhost('t-purpose', 'ghost-purpose', 'purpose');
+
+  $('btn-save-trip').addEventListener('click', () => saveTripForm(t, craRate));
+  $('btn-cancel-trip').addEventListener('click', () => renderTab('travel'));
+}
+
+async function saveTripForm(existing, craRate) {
+  const date       = $('t-date')?.value?.trim()    || '';
+  const startPoint = $('t-start')?.value?.trim()   || '';
+  const endPoint   = $('t-end')?.value?.trim()     || '';
+  const km         = parseFloat($('t-km')?.value)  || 0;
+  const purpose    = $('t-purpose')?.value?.trim() || '';
+  const notes      = $('t-notes')?.value?.trim()   || '';
+  const gpsUsed    = $('t-gps-used')?.value === '1';
+
+  let startCoords = null, endCoords = null;
+  try { startCoords = JSON.parse($('t-start-coords')?.value || 'null'); } catch {}
+  try { endCoords   = JSON.parse($('t-end-coords')?.value   || 'null'); } catch {}
+
+  if (!date) { toast('Date is required', 'warn'); return; }
+
+  const writeOff = km * (+craRate || CRA_DEFAULT);
+
+  const record = {
+    ...(existing || {}),
+    uid:         existing?.uid || mkuid(),
+    date, startPoint, endPoint, km, purpose, notes,
+    writeOff, startCoords, endCoords, gpsUsed,
+    createdAt:   existing?.createdAt || new Date().toISOString(),
+    updatedAt:   new Date().toISOString(),
+  };
+  if (existing?.id != null) record.id = existing.id;
+
+  await DB.put('trips', record);
+  S.trips = await DB.all('trips');
+  await Predict.build();
+  toast(existing ? 'Trip updated' : 'Trip saved', 'ok');
+  renderTab('travel');
+}
+
+async function confirmDeleteTrip(id) {
+  if (!confirm('Delete this trip?')) return;
+  await DB.del('trips', id);
+  S.trips = await DB.all('trips');
+  renderTravel();
+}
+
+// ─── VIEW: OVERVIEW ──────────────────────────
+async function renderOverview() {
+  const odo     = await DB.getSetting('odometer');
+  const craRate = await DB.getSetting('craRate', CRA_DEFAULT);
+
+  let receipts = S.receipts.slice();
+  let trips    = S.trips.slice();
+
+  // Date range filter
+  const { from, to } = S.ovFilter;
+  if (from) {
+    receipts = receipts.filter(r => r.date >= from + '-01');
+    trips    = trips.filter(t => t.date >= from + '-01');
+  }
+  if (to) {
+    const toEnd = to + '-31';
+    receipts = receipts.filter(r => r.date <= toEnd);
+    trips    = trips.filter(t => t.date <= toEnd);
+  }
+
+  const totalKm      = trips.reduce((s, t) => s + (+t.km || 0), 0);
+  const totalWriteOff = trips.reduce((s, t) => s + ((+t.km || 0) * (+craRate || CRA_DEFAULT)), 0);
+  const totalSpent   = receipts.reduce((s, r) => s + (+r.amount || 0), 0);
+  const totalTax     = receipts.reduce((s, r) => s + (+r.taxAmount || 0), 0);
+
+  // Category breakdown
+  const catMap = {};
+  for (const r of receipts) {
+    const c = r.category || 'Misc';
+    catMap[c] = (catMap[c] || 0) + (+r.amount || 0);
+  }
+  const catData = Object.entries(catMap)
+    .map(([label, value], i) => ({ label, value, color: PIE_COLORS[i % PIE_COLORS.length] }))
+    .sort((a, b) => b.value - a.value);
+
+  const odoDisplay = odo != null
+    ? `<span style="font-size:16px;font-weight:700;color:var(--tx)">${(+odo).toLocaleString()} km</span>`
+    : `<span style="color:var(--tx2)">Not set</span>`;
+
+  $('root').innerHTML = `
+    <div class="toolbar" style="margin-bottom:14px">
+      <input type="month" id="ov-from" placeholder="From" value="${esc(S.ovFilter.from)}" style="flex:1;min-width:100px">
+      <input type="month" id="ov-to" placeholder="To" value="${esc(S.ovFilter.to)}" style="flex:1;min-width:100px">
+      <button class="btn-sm" id="ov-reset">All time</button>
+    </div>
+
+    <div class="ov-odo" id="odo-display">
+      Odometer: ${odoDisplay} <span style="color:var(--tx2);font-size:13px">✏</span>
+    </div>
+
+    <div class="ov-card">
+      <h3>Mileage Summary</h3>
+      <div class="ov-row"><span class="muted">Total trips</span><span class="ov-val">${trips.length}</span></div>
+      <div class="ov-row"><span class="muted">Total km</span><span class="ov-val">${totalKm.toFixed(1)} km</span></div>
+      <div class="ov-row"><span class="muted">CRA write-off</span><span class="ov-val" style="color:var(--green)">$${totalWriteOff.toFixed(2)}</span></div>
+    </div>
+
+    <div class="ov-card">
+      <h3>Expense Summary</h3>
+      <div class="ov-row"><span class="muted">Total receipts</span><span class="ov-val">${receipts.length}</span></div>
+      <div class="ov-row"><span class="muted">Total spent</span><span class="ov-val">$${totalSpent.toFixed(2)}</span></div>
+      <div class="ov-row"><span class="muted">Total tax</span><span class="ov-val">$${totalTax.toFixed(2)}</span></div>
+    </div>
+
+    ${catData.length > 0 ? `
+    <div class="ov-card">
+      <h3>By Category</h3>
+      <canvas id="pie-chart" width="200" height="200" style="display:block;margin:0 auto"></canvas>
+      <div class="pie-legend" id="pie-legend"></div>
+    </div>` : ''}
+
+    <div class="ov-card">
+      <h3>Export</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-sm" id="btn-export-receipts">&#8595; Export Receipts CSV</button>
+        <button class="btn-sm" id="btn-export-trips">&#8595; Export Trips CSV</button>
+      </div>
+    </div>
+  `;
+
+  $('ov-from').addEventListener('change', e => { S.ovFilter.from = e.target.value; renderOverview(); });
+  $('ov-to').addEventListener('change',   e => { S.ovFilter.to   = e.target.value; renderOverview(); });
+  $('ov-reset').addEventListener('click', () => { S.ovFilter = { from: '', to: '' }; renderOverview(); });
+
+  $('odo-display').addEventListener('click', async () => {
+    if (!confirm('Edit odometer reading?')) return;
+    const val = prompt('Enter current odometer reading (km):', odo != null ? odo : '');
+    if (val && !isNaN(+val)) {
+      await DB.setSetting('odometer', +val);
+      await DB.setSetting('odoYear', new Date().getFullYear());
+      renderOverview();
+    }
+  });
+
+  $('btn-export-receipts').addEventListener('click', () => exportCSV(receipts));
+  $('btn-export-trips').addEventListener('click',    () => exportTripsCSV(trips));
+
+  // Pie chart
+  if (catData.length > 0) {
+    drawPieChart('pie-chart', catData);
+    const legend = $('pie-legend');
+    const totalVal = catData.reduce((s, d) => s + d.value, 0);
+    legend.innerHTML = catData.map(d => `
+      <div class="pie-legend-row">
+        <div class="pie-dot" style="background:${d.color}"></div>
+        <span class="pie-label">${esc(d.label)}</span>
+        <span class="pie-amt">$${d.value.toFixed(2)}</span>
+        <span class="pie-pct">${totalVal > 0 ? ((d.value / totalVal) * 100).toFixed(1) : 0}%</span>
+      </div>`).join('');
+  }
+}
+
+function drawPieChart(canvasId, data) {
+  const canvas = $(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return;
+  let angle = -Math.PI / 2;
+  data.forEach(d => {
+    const slice = (d.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2, canvas.height/2);
+    ctx.arc(canvas.width/2, canvas.height/2, canvas.width/2 - 4, angle, angle + slice);
+    ctx.closePath();
+    ctx.fillStyle = d.color;
+    ctx.fill();
+    angle += slice;
+  });
+}
+
+// ─── VIEW: SETTINGS ──────────────────────────
+async function renderSettings() {
+  const cid        = await DB.getSetting('gdClientId', '');
+  const lastSync   = await DB.getSetting('lastSync', null);
+  const connected  = !!Drive.token();
+  const gpsEnabled = await DB.getSetting('gpsEnabled', true);
+  const craRate    = await DB.getSetting('craRate', CRA_DEFAULT);
+  const redirectUri = location.origin + location.pathname;
+
+  $('root').innerHTML = `
+    <div class="settings-wrap">
+      <div class="form-title">Settings</div>
+
+      <div class="s-card">
+        <h3>GPS Tracking</h3>
+        <p class="muted sm">Used for automatic trip distance calculation.</p>
+        <div class="s-row">
+          <label class="toggle-label">
+            <span>Enable GPS for trips</span>
+            <input type="checkbox" id="gps-toggle-s" ${gpsEnabled ? 'checked' : ''}>
+          </label>
+        </div>
+      </div>
+
+      <div class="s-card">
+        <h3>CRA Mileage Rate</h3>
+        <p class="muted sm">Current rate: <strong id="cra-rate-display">$${(+craRate).toFixed(2)} / km</strong></p>
+        <div class="s-row">
+          <input id="s-cra-rate" type="number" step="0.01" min="0" placeholder="0.70" value="${(+craRate).toFixed(2)}" style="width:100px">
+          <button class="btn-primary" id="btn-save-cra">Update</button>
+        </div>
+        <p class="muted sm" style="margin-top:8px">Update manually when CRA publishes new rates.</p>
+      </div>
+
+      <div class="s-card">
+        <h3>Google Drive Sync</h3>
+        <p class="muted sm">Sync receipts and trips across devices using your own Google Cloud credentials.</p>
+
+        <details class="setup-details mt8">
+          <summary>&#9654; Setup instructions</summary>
+          <ol>
+            <li>Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console &rarr; Credentials</a></li>
+            <li>Create a project, then enable the <strong>Google Drive API</strong></li>
+            <li>Create credentials &rarr; OAuth 2.0 Client ID &rarr; Web Application</li>
+            <li>Add this URL as an Authorized Redirect URI:
+              <code class="code-block" id="uri-display">${esc(redirectUri)}</code>
+              <button class="btn-xs" id="btn-copy-uri">Copy URL</button>
+            </li>
+            <li>Paste your Client ID below and tap Save</li>
+          </ol>
+        </details>
+
+        <div class="fg mt8">
+          <label for="s-cid">OAuth 2.0 Client ID</label>
+          <input id="s-cid" type="text" placeholder="xxxxxxxx.apps.googleusercontent.com" value="${esc(cid)}">
+        </div>
+        <div class="s-row">
+          <button class="btn-primary" id="btn-save-cid">Save</button>
+          ${connected
+            ? `<button class="btn-secondary" id="btn-disconnect">Disconnect</button>
+               <span class="muted sm" style="color:var(--green)">&#9679; Connected</span>`
+            : `<span class="muted sm">Not connected</span>`}
+        </div>
+        ${lastSync ? `<p class="muted sm mt8">Last synced: ${new Date(lastSync).toLocaleString()}</p>` : ''}
+      </div>
+
+      <div class="s-card">
+        <h3>Data</h3>
+        <p class="muted sm">${S.receipts.length} receipt${S.receipts.length !== 1 ? 's' : ''} · ${S.trips.length} trip${S.trips.length !== 1 ? 's' : ''} stored locally</p>
+        <div class="s-row">
+          <button class="btn-secondary" id="btn-export-all">&#8595; Export All CSV</button>
+          <button class="btn-danger"    id="btn-clear-all">&#9888; Clear All Data</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('gps-toggle-s').addEventListener('change', async e => {
+    await DB.setSetting('gpsEnabled', e.target.checked);
+    toast('GPS ' + (e.target.checked ? 'enabled' : 'disabled'), 'ok');
+  });
+
+  $('btn-save-cra').addEventListener('click', async () => {
+    const val = parseFloat($('s-cra-rate')?.value);
+    if (isNaN(val) || val <= 0) { toast('Enter a valid rate', 'warn'); return; }
+    await DB.setSetting('craRate', val);
+    $('cra-rate-display').textContent = `$${val.toFixed(2)} / km`;
+    toast('CRA rate updated', 'ok');
+  });
+
+  $('btn-copy-uri').addEventListener('click', () => {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(redirectUri).then(() => toast('Copied!', 'ok'));
+    } else {
+      prompt('Copy this URL:', redirectUri);
+    }
+  });
+
+  $('btn-save-cid').addEventListener('click', async () => {
+    const val = $('s-cid')?.value?.trim();
+    if (!val) { toast('Enter a Client ID', 'warn'); return; }
+    await DB.setSetting('gdClientId', val);
+    toast('Client ID saved', 'ok');
+  });
+
+  $('btn-disconnect')?.addEventListener('click', () => {
+    Drive.clearToken();
+    toast('Disconnected from Google Drive', 'ok');
+    renderSettings();
+  });
+
+  $('btn-export-all').addEventListener('click', () => exportCSV(S.receipts));
+
+  $('btn-clear-all').addEventListener('click', async () => {
+    if (!confirm('Permanently delete ALL receipts and trips?')) return;
+    if (!confirm('This cannot be undone. Delete everything?')) return;
+    for (const r of S.receipts) await DB.del('receipts', r.id);
+    for (const t of S.trips)    await DB.del('trips', t.id);
+    S.receipts = [];
+    S.trips    = [];
+    await Predict.build();
+    toast('All data cleared', 'ok');
+    renderTab('receipts');
+  });
+}
+
+// ─── HEADER WIRING ───────────────────────────
+$('btn-sync').addEventListener('click', showSyncModal);
+
+// Bottom nav wiring
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => renderTab(btn.dataset.tab));
+});
+
+// ─── INIT ────────────────────────────────────
+async function init() {
+  if (Drive.checkCallback()) {
+    S.syncStatus = 'ok'; renderDot();
+    toast('Google Drive connected', 'ok');
+  }
+
+  await DB.open();
+
+  S.receipts = await DB.all('receipts');
+  S.trips    = await DB.all('trips');
+
+  await Predict.build();
+
+  // Odometer first-launch / yearly prompt
+  const odo = await DB.getSetting('odometer');
+  if (odo == null) {
+    const base = prompt('Welcome to Slowbooks!\n\nEnter your current odometer reading (km) to start tracking mileage:');
+    if (base && !isNaN(+base)) {
+      await DB.setSetting('odometer', +base);
+      await DB.setSetting('odoYear', new Date().getFullYear());
+    }
+  } else {
+    const odoYear = await DB.getSetting('odoYear', new Date().getFullYear());
+    if (odoYear < new Date().getFullYear()) {
+      const upd = prompt(`It's a new year! Update your odometer reading?\nCurrent: ${(+odo).toLocaleString()} km\n\nEnter new reading (or Cancel to skip):`);
+      if (upd && !isNaN(+upd)) {
+        await DB.setSetting('odometer', +upd);
+        await DB.setSetting('odoYear', new Date().getFullYear());
+      }
+    }
+  }
+
+  // Drive client ID nudge
+  const cid = await DB.getSetting('gdClientId');
+  if (!cid) {
+    const shown = await DB.getSetting('gdPromptShown');
+    if (!shown) {
+      await DB.setSetting('gdPromptShown', true);
+      setTimeout(() => toast('Tip: Add your Google Client ID in Settings for cloud backup', 'ok'), 1500);
+    }
+  }
+
+  const lastSync = await DB.getSetting('lastSync');
+  if (lastSync) { S.syncStatus = 'ok'; renderDot(); }
+
+  // Restore active trip state
+  S.activeTrip = await DB.getSetting('activeTrip', null);
+
+  renderTab('receipts');
+}
+
+init();
+</script>
+</body>
+</html>
